@@ -428,8 +428,8 @@ table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
     <!-- DASHBOARD -->
     <section class="tab-panel on" id="panel-dash">
       <div class="section-title">Visão geral do sistema</div>
-      <div class="section-sub">Estatísticas agregadas a partir dos dados guardados neste navegador</div>
-      <div class="alert info"><i class="fa-solid fa-circle-info"></i> Esta é uma versão de demonstração 100% no navegador (sem servidor central). Os dados reflectem apenas este dispositivo. Na migração para o backend (ver <code>/docs/ARQUITECTURA-BACKEND.md</code>), este painel passará a agregar dados reais de todos os utilizadores via API REST.</div>
+      <div class="section-sub" id="dashSectionSub">Estatísticas agregadas</div>
+      <div id="dashCloudBanner"></div>
       <div class="stat-grid" id="adminStats"></div>
       <div class="card">
         <h3>Distribuição de planos</h3>
@@ -1615,10 +1615,16 @@ if (admin) {
   }
   function renderCloudStatus() {
     const box = document.getElementById('cloudStatusBox');
+    const dashBanner = document.getElementById('dashCloudBanner');
+    const dashSub = document.getElementById('dashSectionSub');
     if (SNCloud.isReady()) {
       box.innerHTML = `<div class="alert success"><i class="fa-solid fa-circle-check"></i> Base de dados partilhada configurada. Utilizadores e pagamentos ficam visíveis em todos os dispositivos.</div>`;
+      if (dashBanner) dashBanner.innerHTML = `<div class="alert success mt-8"><i class="fa-solid fa-cloud"></i> Base de dados partilhada activa — estes dados incluem utilizadores e pagamentos de todos os dispositivos.</div>`;
+      if (dashSub) dashSub.textContent = 'Estatísticas agregadas de todos os dispositivos (nuvem activa)';
     } else {
       box.innerHTML = `<div class="alert warning"><i class="fa-solid fa-triangle-exclamation"></i> Nuvem não configurada — cada dispositivo só vê os seus próprios dados.</div>`;
+      if (dashBanner) dashBanner.innerHTML = `<div class="alert warning mt-8"><i class="fa-solid fa-triangle-exclamation"></i> Base de dados partilhada não configurada — estes dados reflectem apenas este dispositivo. Configure em Configurações → Base de dados partilhada.</div>`;
+      if (dashSub) dashSub.textContent = 'Estatísticas agregadas a partir dos dados guardados neste navegador';
     }
   }
   document.getElementById('cloudConfigForm').addEventListener('submit', (e) => {
