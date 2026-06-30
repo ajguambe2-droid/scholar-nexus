@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1117">
+<title>Comparar Artigos — Scholar Nexus</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/images/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ============================================================
+   SCHOLAR NEXUS — Design System Partilhado
+   Agência Digital — Azul #3B6EC8 · Vermelho #E8312A
+   Usado por: login, registo, preços, dashboard, admin, comparação
+   ============================================================ */
+:root {
+  --blue:        #3B6EC8;
+  --blue-light:  #5B8DE8;
+  --blue-dark:   #2A52A0;
+  --blue-dim:    rgba(59,110,200,0.12);
+  --blue-glow:   rgba(59,110,200,0.25);
+  --red:         #E8312A;
+  --red-light:   #FF4A42;
+  --red-dim:     rgba(232,49,42,0.10);
+  --bg:          #0f1117;
+  --bg2:         #161b27;
+  --bg3:         #1e2436;
+  --surface:     #1a2035;
+  --surface2:    #222840;
+  --border:      rgba(255,255,255,0.07);
+  --border2:     rgba(59,110,200,0.25);
+  --text:        #f0f2f8;
+  --text2:       #9aa3b8;
+  --text3:       #5c6480;
+  --success:     #22c55e;
+  --success-dim: rgba(34,197,94,0.12);
+  --warning:     #f59e0b;
+  --warning-dim: rgba(245,158,11,0.12);
+  --font:        'Inter', system-ui, sans-serif;
+  --mono:        'JetBrains Mono', monospace;
+  --radius:      10px;
+  --radius-lg:   16px;
+  --shadow:      0 4px 24px rgba(0,0,0,0.4);
+  --shadow-blue: 0 4px 24px rgba(59,110,200,0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 99px; }
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(59,110,200,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,110,200,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── TOPBAR (idêntica em todas as páginas) ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 24px; height: 60px;
+  background: rgba(15,17,23,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.logo-wrap { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-mark {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--red) 100%);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.logo-mark svg { width: 18px; height: 18px; fill: #fff; }
+.logo-text { display: flex; flex-direction: column; }
+.logo-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; line-height: 1; }
+.logo-sub { font-size: 9px; font-weight: 500; color: var(--blue-light); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.nav-link { font-size: 13px; color: var(--text2); text-decoration: none; padding: 6px 10px; border-radius: 7px; transition: color .2s; }
+.nav-link:hover { color: var(--text); }
+.nav-link.active { color: var(--blue-light); }
+.btn-trial, .btn-primary {
+  font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+  background: var(--blue); color: #fff; border: none; cursor: pointer;
+  transition: background .2s, transform .1s; text-decoration: none; font-family: var(--font);
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-trial:hover, .btn-primary:hover { background: var(--blue-light); }
+.btn-trial:active, .btn-primary:active { transform: scale(0.97); }
+.btn-secondary {
+  font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+  background: var(--surface); color: var(--text2); border: 1px solid var(--border);
+  cursor: pointer; transition: all .2s; font-family: var(--font); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-secondary:hover { color: var(--text); border-color: var(--blue); }
+.btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+.btn-danger:hover { background: var(--red-light); }
+.btn-block { width: 100%; justify-content: center; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ── Avatar / utilizador no topbar ── */
+.user-chip {
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px;
+  border-radius: 99px; border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; text-decoration: none; position: relative;
+}
+.user-chip:hover { border-color: var(--blue); }
+.user-avatar {
+  width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.user-chip .uname { font-size: 12px; font-weight: 600; color: var(--text); }
+.user-chip .uplan { font-size: 9px; color: var(--blue-light); text-transform: uppercase; letter-spacing: .5px; }
+
+.bell-btn {
+  position: relative; width: 36px; height: 36px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text2);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px;
+}
+.bell-btn:hover { color: var(--text); border-color: var(--blue); }
+.bell-dot {
+  position: absolute; top: -3px; right: -3px; min-width: 16px; height: 16px; padding: 0 3px;
+  background: var(--red); color: #fff; border-radius: 99px; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg);
+}
+.notif-panel {
+  position: absolute; top: 48px; right: 24px; width: 340px; max-height: 420px; overflow-y: auto;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); z-index: 200; display: none;
+}
+.notif-panel.open { display: block; }
+.notif-panel h4 { font-size: 13px; padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.notif-item { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text2); }
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: var(--blue-dim); }
+.notif-item b { color: var(--text); display: block; font-size: 12.5px; margin-bottom: 2px; }
+.notif-item time { font-size: 10px; color: var(--text3); }
+.notif-empty { padding: 30px 16px; text-align: center; font-size: 12px; color: var(--text3); }
+
+/* ── LAYOUT GENÉRICO ── */
+.page-wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 36px 20px 80px; }
+.page-wrap.narrow { max-width: 440px; }
+.page-header { margin-bottom: 28px; }
+.page-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+.page-header p { font-size: 14px; color: var(--text3); }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: 99px;
+  border: 1px solid var(--border2); background: var(--blue-dim); font-size: 11px; font-weight: 600;
+  color: var(--blue-light); margin-bottom: 14px; letter-spacing: 0.4px; text-transform: uppercase;
+}
+
+/* ── CARTÕES / SURFACES ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 24px;
+}
+.card + .card { margin-top: 14px; }
+.card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.card .muted { font-size: 12.5px; color: var(--text3); }
+
+/* ── FORMULÁRIOS ── */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.field input, .field select, .field textarea {
+  width: 100%; height: 42px; padding: 0 14px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--bg2); color: var(--text);
+  font-size: 13.5px; font-family: var(--font); outline: none; transition: border-color .2s;
+}
+.field textarea { height: auto; padding: 10px 14px; resize: vertical; min-height: 80px; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-glow); }
+.field-help { font-size: 11.5px; color: var(--text3); margin-top: 5px; }
+.field-error { font-size: 11.5px; color: var(--red-light); margin-top: 5px; display: none; }
+.field-error.show { display: block; }
+.input-icon-wrap { position: relative; }
+.input-icon-wrap input { padding-left: 38px; }
+.input-icon-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 13px; }
+.alert {
+  border-radius: var(--radius); padding: 12px 14px; font-size: 12.5px; margin-bottom: 16px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.alert.error { background: var(--red-dim); border: 1px solid rgba(232,49,42,0.25); color: #ff8a83; }
+.alert.success { background: var(--success-dim); border: 1px solid rgba(34,197,94,0.25); color: #6ee79f; }
+.alert.warning { background: var(--warning-dim); border: 1px solid rgba(245,158,11,0.25); color: #fbbf24; }
+.alert.info { background: var(--blue-dim); border: 1px solid var(--border2); color: var(--blue-light); }
+
+/* ── BADGES & TAGS ── */
+.badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 99px; letter-spacing: .3px; }
+.badge.plan-gratuito { background: var(--bg3); color: var(--text2); }
+.badge.plan-estudante { background: var(--success-dim); color: var(--success); }
+.badge.plan-investigador { background: var(--blue-dim); color: var(--blue-light); }
+.badge.plan-universidade { background: rgba(156,39,176,0.15); color: #c87fdb; }
+.badge.plan-enterprise { background: var(--red-dim); color: var(--red-light); }
+.badge.status-active { background: var(--success-dim); color: var(--success); }
+.badge.status-pending { background: var(--warning-dim); color: var(--warning); }
+.badge.status-expired, .badge.status-cancelled { background: var(--red-dim); color: var(--red-light); }
+.badge.role-admin { background: var(--red-dim); color: var(--red-light); }
+.badge.role-user { background: var(--blue-dim); color: var(--blue-light); }
+
+/* ── TABELAS ── */
+table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.data-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--text3); padding: 10px 12px; border-bottom: 1px solid var(--border); font-weight: 600; }
+table.data-table td { padding: 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+table.data-table tr:last-child td { border-bottom: none; }
+table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
+
+/* ── SIDEBAR (dashboard / admin) ── */
+.app-shell { display: flex; min-height: calc(100vh - 60px); position: relative; z-index: 1; }
+.sidebar {
+  width: 230px; flex-shrink: 0; border-right: 1px solid var(--border);
+  padding: 20px 12px; background: rgba(22,27,39,0.4);
+}
+.sidebar-group-label { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); padding: 14px 12px 6px; }
+.side-link {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; color: var(--text2); text-decoration: none; margin-bottom: 2px; transition: all .15s;
+}
+.side-link i { width: 16px; text-align: center; font-size: 13px; }
+.side-link:hover { background: var(--bg3); color: var(--text); }
+.side-link.on { background: var(--blue-dim); color: var(--blue-light); font-weight: 600; }
+.side-link .count { margin-left: auto; font-size: 10px; background: var(--bg3); color: var(--text3); padding: 1px 7px; border-radius: 99px; }
+.app-main { flex: 1; padding: 28px 32px; min-width: 0; }
+@media (max-width: 880px) {
+  .app-shell { flex-direction: column; }
+  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; gap: 4px; padding: 10px 12px; }
+  .sidebar-group-label { display: none; }
+  .side-link { white-space: nowrap; }
+  .app-main { padding: 20px 16px; }
+}
+
+/* ── STAT CARDS ── */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; }
+.stat-card .ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 14px; }
+.stat-card .v { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.stat-card .l { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.stat-card .delta { font-size: 11px; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+.delta.up { color: var(--success); }
+.delta.down { color: var(--red-light); }
+
+/* ── MODAL (genérico) ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 26px; width: 92%; max-width: 460px; box-shadow: var(--shadow); max-height: 86vh; overflow-y: auto; }
+.modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+.modal p.sub { font-size: 12.5px; color: var(--text3); margin-bottom: 18px; }
+
+/* ── FOOTER ── */
+.footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 32px 24px; text-align: center; }
+.footer-contact { font-size: 12px; color: var(--text3); line-height: 2; }
+.footer-contact a { color: var(--blue-light); text-decoration: none; }
+.footer-copy { font-size: 11px; color: var(--text3); margin-top: 16px; }
+
+/* ── UTILIDADES ── */
+.flex { display: flex; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-8 { gap: 8px; } .gap-10 { gap: 10px; } .gap-14 { gap: 14px; }
+.mt-8 { margin-top: 8px; } .mt-14 { margin-top: 14px; } .mt-20 { margin-top: 20px; } .mt-28 { margin-top: 28px; }
+.text-center { text-align: center; }
+.empty-block { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty-block i { font-size: 30px; margin-bottom: 14px; display: block; opacity: .6; }
+.empty-block h4 { font-size: 15px; color: var(--text2); margin-bottom: 6px; }
+.empty-block p { font-size: 13px; max-width: 320px; margin: 0 auto; }
+.spin { animation: snspin .8s linear infinite; }
+@keyframes snspin { to { transform: rotate(360deg); } }
+
+
+/* ============================================================
+   TEMA CLARO / ESCURO / AUTOMÁTICO
+   Activado via atributo data-theme no elemento <html>.
+   "auto" usa a preferência do sistema operativo do utilizador.
+   ============================================================ */
+:root[data-theme="light"] {
+  --blue-dim:    rgba(59,110,200,0.08);
+  --blue-glow:   rgba(59,110,200,0.18);
+  --red-dim:     rgba(232,49,42,0.08);
+  --bg:          #f5f6fa;
+  --bg2:         #ffffff;
+  --bg3:         #eef0f5;
+  --surface:     #ffffff;
+  --surface2:    #f3f5f9;
+  --border:      rgba(15,17,23,0.09);
+  --border2:     rgba(59,110,200,0.28);
+  --text:        #11131c;
+  --text2:       #4d5468;
+  --text3:       #828aa0;
+  --success-dim: rgba(34,197,94,0.10);
+  --warning-dim: rgba(245,158,11,0.10);
+  --shadow:      0 4px 24px rgba(15,17,23,0.10);
+  --shadow-blue: 0 4px 24px rgba(59,110,200,0.14);
+}
+:root[data-theme="light"] body::before {
+  background-image:
+    linear-gradient(rgba(59,110,200,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,110,200,0.05) 1px, transparent 1px);
+}
+.theme-toggle {
+  display: flex; align-items: center; gap: 2px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 99px; padding: 3px;
+}
+.theme-toggle button {
+  width: 30px; height: 26px; border: none; background: transparent; color: var(--text3);
+  border-radius: 99px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.theme-toggle button.on { background: var(--blue); color: #fff; }
+.theme-toggle button:hover:not(.on) { color: var(--text); }
+
+</style>
+<style>
+  .compare-scroll { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-lg); }
+  table.cmp { width:100%; border-collapse:collapse; min-width:760px; }
+  table.cmp th, table.cmp td { padding:14px 16px; border-bottom:1px solid var(--border); border-right:1px solid var(--border); font-size:13px; vertical-align:top; }
+  table.cmp th:last-child, table.cmp td:last-child { border-right:none; }
+  table.cmp .row-label { background:var(--bg2); color:var(--text3); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; width:140px; }
+  table.cmp th.art-col { background:var(--surface2); font-size:13.5px; font-weight:600; min-width:220px; position:relative; }
+  table.cmp td { color:var(--text2); }
+  .remove-x { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px; }
+  .remove-x:hover { color:var(--red-light); }
+  .winner { color:var(--success); font-weight:700; }
+</style>
+<script>
+/* Tema Dark / Light / Auto — aplicado antes da renderização para evitar "flash" */
+(function() {
+  function applyTheme(mode) {
+    var real = mode;
+    if (mode === 'auto') {
+      real = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    if (real === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  window.SNTheme = {
+    get: function() { return localStorage.getItem('sn_theme') || 'dark'; },
+    set: function(mode) { localStorage.setItem('sn_theme', mode); applyTheme(mode); window.SNTheme.syncButtons(); },
+    syncButtons: function() {
+      var cur = window.SNTheme.get();
+      document.querySelectorAll('.theme-toggle button').forEach(function(b) {
+        b.classList.toggle('on', b.dataset.mode === cur);
+      });
+    },
+    mount: function(targetId) {
+      var el = document.getElementById(targetId);
+      if (!el) return;
+      el.innerHTML =
+        '<button data-mode="dark" title="Escuro" onclick="SNTheme.set(\'dark\')"><i class="fa-solid fa-moon"></i></button>' +
+        '<button data-mode="light" title="Claro" onclick="SNTheme.set(\'light\')"><i class="fa-solid fa-sun"></i></button>' +
+        '<button data-mode="auto" title="Automático (sistema)" onclick="SNTheme.set(\'auto\')"><i class="fa-solid fa-circle-half-stroke"></i></button>';
+      window.SNTheme.syncButtons();
+    }
+  };
+  applyTheme(window.SNTheme.get());
+  document.addEventListener('DOMContentLoaded', function() { window.SNTheme.mount('themeToggleSlot'); });
+})();
+</script>
+
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="logo-wrap">
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <div class="logo-text"><span class="logo-name">Scholar Nexus</span><span class="logo-sub">Agência Digital</span></div>
+  </a>
+  <nav class="topbar-right">
+    <a href="index.html" class="nav-link">Pesquisar</a>
+    <span class="theme-toggle" id="themeToggleSlot" style="margin-right:8px"></span>
+    <span id="topbarAuthSlot" style="display:flex;align-items:center;gap:10px"></span>
+  </nav>
+</header>
+
+<main class="page-wrap">
+  <div class="page-header flex-between">
+    <div>
+      <div class="eyebrow"><i class="fa-solid fa-scale-balanced"></i> Comparação</div>
+      <h1>Comparação de artigos lado a lado</h1>
+      <p>Até 4 artigos seleccionados na pesquisa principal.</p>
+    </div>
+    <a href="index.html" class="btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Nova pesquisa</a>
+  </div>
+
+  <div id="cmpContent"></div>
+</main>
+
+<footer class="footer">
+  <div class="footer-contact"><a href="mailto:agenciadigital003@gmail.com">agenciadigital003@gmail.com</a></div>
+  <div class="footer-copy">© 2026 Agência Digital. Todos os direitos reservados.</div>
+</footer>
+
+<script>
+/* ============================================================
+   SCHOLAR NEXUS — sn-core.js
+   Motor central de dados (autenticação, planos, pagamentos,
+   favoritos, colecções, histórico, notificações, logs).
+
+   IMPORTANTE — ARQUITECTURA:
+   Esta camada simula um backend usando localStorage do navegador,
+   para que toda a plataforma seja utilizável de imediato, sem
+   servidor. Cada função aqui está escrita de propósito como se
+   fosse um cliente de API REST (ex.: SNAuth.login() devolve uma
+   Promise, tal como faria uma chamada fetch() a um backend real).
+   Isto permite que, na migração futura para Node.js/Express ou
+   FastAPI + PostgreSQL (ver /docs/ARQUITECTURA-BACKEND.md), baste
+   substituir o corpo de cada função por uma chamada fetch() real,
+   mantendo toda a interface (UI) e a lógica das páginas inalteradas.
+   ============================================================ */
+
+const SN_KEYS = {
+  USERS: 'sn_db_users',
+  SESSION: 'sn_db_session',
+  PAYMENTS: 'sn_db_payments',
+  LOGS: 'sn_db_logs',
+  API_CONFIG: 'sn_db_api_config',
+  FAV: (uid) => `sn_data_fav_${uid}`,
+  COL: (uid) => `sn_data_col_${uid}`,
+  HIST: (uid) => `sn_data_hist_${uid}`,
+  NOTIF: (uid) => `sn_data_notif_${uid}`,
+  DOWN: (uid) => `sn_data_down_${uid}`,
+  EXPORT: (uid) => `sn_data_export_${uid}`,
+  SEEN_DOIS: (uid) => `sn_data_seen_${uid}`,
+};
+
+function snRead(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch (e) { return fallback; }
+}
+function snWrite(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+function snUid() { return 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+async function snHash(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('scholar-nexus::' + text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ════════════════════════════════════════
+// PLANOS DE SUBSCRIÇÃO
+// ════════════════════════════════════════
+const SNPlans = {
+  CATALOG: {
+    gratuito: {
+      key: 'gratuito', label: 'Gratuito', price: 0, currency: 'MZN', period: 'sempre',
+      tagline: 'Para conhecer a plataforma',
+      limits: { searches: 15, exports: 3, favorites: 20, collections: 1, downloads: 10 },
+      features: { compare: false, translate: false, alerts: false, ai: false, scihub: true },
+    },
+    estudante: {
+      key: 'estudante', label: 'Estudante', price: 350, currency: 'MZN', period: 'mês',
+      tagline: 'Para estudantes de graduação e mestrado',
+      limits: { searches: 150, exports: 40, favorites: 300, collections: 6, downloads: 80 },
+      features: { compare: true, translate: true, alerts: true, ai: false, scihub: true },
+    },
+    investigador: {
+      key: 'investigador', label: 'Investigador', price: 950, currency: 'MZN', period: 'mês',
+      tagline: 'Para docentes e investigadores activos',
+      limits: { searches: 600, exports: 200, favorites: 1500, collections: 25, downloads: 400 },
+      features: { compare: true, translate: true, alerts: true, ai: true, scihub: true },
+    },
+    universidade: {
+      key: 'universidade', label: 'Universidade', price: 18500, currency: 'MZN', period: 'mês',
+      tagline: 'Licença institucional multi-utilizador',
+      limits: { searches: Infinity, exports: Infinity, favorites: Infinity, collections: Infinity, downloads: Infinity },
+      features: { compare: true, translate: true, alerts: true, ai: true, scihub: true },
+    },
+    enterprise: {
+      key: 'enterprise', label: 'Enterprise', price: null, currency: 'MZN', period: 'sob consulta',
+      tagline: 'Para organizações e centros de pesquisa',
+      limits: { searches: Infinity, exports: Infinity, favorites: Infinity, collections: Infinity, downloads: Infinity },
+      features: { compare: true, translate: true, alerts: true, ai: true, scihub: true },
+    },
+  },
+  get(key) { return this.CATALOG[key] || this.CATALOG.gratuito; },
+  list() { return Object.values(this.CATALOG); },
+};
+
+// ════════════════════════════════════════
+// AUTENTICAÇÃO — SNAuth
+// ════════════════════════════════════════
+const SNAuth = {
+
+  init() {
+    const users = snRead(SN_KEYS.USERS, null);
+    if (!users) {
+      // Conta de administrador semente — permite aceder ao painel admin
+      // imediatamente, sem passo de configuração manual.
+      this._seedAdmin();
+    }
+    if (!snRead(SN_KEYS.API_CONFIG, null)) {
+      snWrite(SN_KEYS.API_CONFIG, {
+        'Semantic Scholar': true, 'OpenAlex': true, 'CORE': true, 'CrossRef': true,
+        'Europe PMC': true, 'PubMed': true, 'arXiv': true, 'DOAJ': true,
+      });
+    }
+  },
+
+  async _seedAdmin() {
+    const passwordHash = await snHash('admin123');
+    const admin = {
+      id: snUid(), name: 'Administrador Scholar Nexus', email: 'admin@agenciadigital.mz',
+      passwordHash, role: 'admin', tipo: 'empresa', plan: 'enterprise', planStatus: 'ativo',
+      createdAt: Date.now(), usage: { searches: 0, exports: 0, periodStart: Date.now() },
+    };
+    snWrite(SN_KEYS.USERS, [admin]);
+  },
+
+  _users() { return snRead(SN_KEYS.USERS, []); },
+  _saveUsers(list) { snWrite(SN_KEYS.USERS, list); },
+
+  async register({ name, email, password, tipo }) {
+    await this._ensureInit();
+    email = (email || '').trim().toLowerCase();
+    if (!name || !email || !password) throw new Error('Preencha todos os campos obrigatórios.');
+    if (password.length < 6) throw new Error('A palavra-passe deve ter pelo menos 6 caracteres.');
+    const users = this._users();
+    if (users.some(u => u.email === email)) throw new Error('Já existe uma conta registada com este email.');
+    const passwordHash = await snHash(password);
+    const user = {
+      id: snUid(), name, email, passwordHash, role: 'user', tipo: tipo || 'estudante',
+      plan: 'gratuito', planStatus: 'ativo', createdAt: Date.now(),
+      usage: { searches: 0, exports: 0, periodStart: Date.now() },
+    };
+    users.push(user);
+    this._saveUsers(users);
+    SNData.addNotification(user.id, 'Bem-vindo(a) ao Scholar Nexus', 'A sua conta foi criada com sucesso no plano Gratuito.');
+    this.addLog('registo', `Novo utilizador registado: ${email}`, user.id);
+    this._setSession(user.id);
+    return this.sanitize(user);
+  },
+
+  async login(email, password) {
+    await this._ensureInit();
+    email = (email || '').trim().toLowerCase();
+    const users = this._users();
+    const user = users.find(u => u.email === email);
+    if (!user) throw new Error('Email ou palavra-passe incorrectos.');
+    const hash = await snHash(password);
+    if (hash !== user.passwordHash) throw new Error('Email ou palavra-passe incorrectos.');
+    this._setSession(user.id);
+    this.addLog('login', `Sessão iniciada: ${email}`, user.id);
+    return this.sanitize(user);
+  },
+
+  async _ensureInit() {
+    if (!snRead(SN_KEYS.USERS, null)) await this._seedAdmin();
+  },
+
+  _setSession(userId) {
+    snWrite(SN_KEYS.SESSION, { userId, token: snUid(), createdAt: Date.now() });
+  },
+
+  logout() {
+    const s = this.getSession();
+    if (s) this.addLog('logout', 'Sessão terminada', s.userId);
+    localStorage.removeItem(SN_KEYS.SESSION);
+  },
+
+  getSession() { return snRead(SN_KEYS.SESSION, null); },
+
+  getCurrentUser() {
+    const s = this.getSession();
+    if (!s) return null;
+    const user = this._users().find(u => u.id === s.userId);
+    return user ? this.sanitize(user) : null;
+  },
+
+  getCurrentUserRaw() {
+    const s = this.getSession();
+    if (!s) return null;
+    return this._users().find(u => u.id === s.userId) || null;
+  },
+
+  sanitize(user) {
+    const { passwordHash, ...rest } = user;
+    return rest;
+  },
+
+  requireAuth(redirectTo) {
+    const u = this.getCurrentUser();
+    if (!u) {
+      const next = encodeURIComponent(location.pathname.split('/').pop());
+      location.href = (redirectTo || this._rel('login.html')) + '?next=' + next;
+      return null;
+    }
+    return u;
+  },
+
+  requireAdmin() {
+    const u = this.getCurrentUser();
+    if (!u || u.role !== 'admin') {
+      location.href = this._rel('login.html') + '?denied=1';
+      return null;
+    }
+    return u;
+  },
+
+  _rel(file) {
+    // Resolve caminho relativo correcto quando chamado de /dashboard/ ou /admin/
+    const inSub = /\/(dashboard|admin)\/?$|\/(dashboard|admin)\/[^/]*$/.test(location.pathname);
+    return inSub ? '../' + file : file;
+  },
+
+  updateUser(id, patch) {
+    const users = this._users();
+    const idx = users.findIndex(u => u.id === id);
+    if (idx === -1) return null;
+    users[idx] = { ...users[idx], ...patch };
+    this._saveUsers(users);
+    return this.sanitize(users[idx]);
+  },
+
+  changePassword(id, newPassword) {
+    return snHash(newPassword).then(hash => this.updateUser(id, { passwordHash: hash }));
+  },
+
+  deleteUser(id) {
+    this._saveUsers(this._users().filter(u => u.id !== id));
+    this.addLog('admin', `Utilizador removido (id: ${id})`, null);
+  },
+
+  listUsers() { return this._users().map(u => this.sanitize(u)); },
+
+  // ── Limites de utilização por plano ──
+  _resetUsageIfNewMonth(user) {
+    const start = new Date(user.usage?.periodStart || Date.now());
+    const now = new Date();
+    if (start.getMonth() !== now.getMonth() || start.getFullYear() !== now.getFullYear()) {
+      return this.updateUser(user.id, { usage: { searches: 0, exports: 0, periodStart: Date.now() } });
+    }
+    return user;
+  },
+
+  canPerform(action) {
+    const raw = this.getCurrentUserRaw();
+    if (!raw) return { allowed: false, reason: 'not_logged_in' };
+    const fresh = this._resetUsageIfNewMonth(raw);
+    const plan = SNPlans.get(fresh.plan);
+    const used = fresh.usage?.[action] || 0;
+    const limit = plan.limits[action === 'searches' ? 'searches' : action];
+    if (limit === undefined) return { allowed: true };
+    if (used >= limit) return { allowed: false, reason: 'limit_reached', plan, used, limit };
+    return { allowed: true, plan, used, limit };
+  },
+
+  incrementUsage(action) {
+    const raw = this.getCurrentUserRaw();
+    if (!raw) return;
+    const fresh = this._resetUsageIfNewMonth(raw);
+    const usage = { ...fresh.usage, [action]: (fresh.usage?.[action] || 0) + 1 };
+    this.updateUser(fresh.id, { usage });
+  },
+
+  // ── Pagamentos / Subscrições (arquitectura — sem cobranças reais) ──
+  // Nunca processa pagamentos verdadeiros. Cria apenas o registo de
+  // transacção com estado 'pendente', tal como aconteceria ao iniciar
+  // um checkout real com Stripe/PayPal/M-Pesa/e-Mola. A confirmação real
+  // exigiria o backend (webhook do gateway) — ver docs/ARQUITECTURA-BACKEND.md.
+  createCheckout(planKey, method) {
+    const user = this.getCurrentUserRaw();
+    if (!user) throw new Error('É necessário iniciar sessão para subscrever um plano.');
+    const plan = SNPlans.get(planKey);
+    const payments = snRead(SN_KEYS.PAYMENTS, []);
+    const payment = {
+      id: snUid(), userId: user.id, plan: planKey, method,
+      amount: plan.price, currency: plan.currency, status: 'pendente',
+      createdAt: Date.now(),
+    };
+    payments.push(payment);
+    snWrite(SN_KEYS.PAYMENTS, payments);
+    this.updateUser(user.id, { planStatus: 'pendente' });
+    this.addLog('pagamento', `Checkout iniciado: plano ${plan.label} via ${method}`, user.id);
+    return payment;
+  },
+
+  // Disponível apenas em ambiente de demonstração/sandbox — simula a
+  // confirmação que, em produção, chegaria via webhook do gateway de
+  // pagamento (Stripe/PayPal) ou da API M-Pesa/e-Mola.
+  simulateApproval(paymentId) {
+    const payments = snRead(SN_KEYS.PAYMENTS, []);
+    const idx = payments.findIndex(p => p.id === paymentId);
+    if (idx === -1) throw new Error('Transacção não encontrada.');
+    payments[idx].status = 'ativo';
+    payments[idx].confirmedAt = Date.now();
+    snWrite(SN_KEYS.PAYMENTS, payments);
+    const pay = payments[idx];
+    this.updateUser(pay.userId, { plan: pay.plan, planStatus: 'ativo' });
+    SNData.addNotification(pay.userId, 'Subscrição activada', `O plano ${SNPlans.get(pay.plan).label} está agora activo.`);
+    this.addLog('pagamento', `Pagamento confirmado (sandbox): ${pay.method} — plano ${pay.plan}`, pay.userId);
+    return pay;
+  },
+
+  cancelSubscription(userId) {
+    this.updateUser(userId, { plan: 'gratuito', planStatus: 'cancelado' });
+    this.addLog('pagamento', 'Subscrição cancelada — utilizador movido para o plano Gratuito', userId);
+  },
+
+  getPayments(userId) {
+    const all = snRead(SN_KEYS.PAYMENTS, []);
+    return userId ? all.filter(p => p.userId === userId) : all;
+  },
+
+  // ── Logs do sistema (painel administrador) ──
+  addLog(type, message, userId) {
+    const logs = snRead(SN_KEYS.LOGS, []);
+    logs.unshift({ id: snUid(), type, message, userId, createdAt: Date.now() });
+    snWrite(SN_KEYS.LOGS, logs.slice(0, 500));
+  },
+  getLogs(limit) {
+    const logs = snRead(SN_KEYS.LOGS, []);
+    return limit ? logs.slice(0, limit) : logs;
+  },
+
+  // ── Configuração das APIs científicas (painel administrador) ──
+  getApiConfig() { return snRead(SN_KEYS.API_CONFIG, {}); },
+  setApiEnabled(name, enabled) {
+    const cfg = this.getApiConfig();
+    cfg[name] = enabled;
+    snWrite(SN_KEYS.API_CONFIG, cfg);
+  },
+};
+
+// ════════════════════════════════════════
+// DADOS DO UTILIZADOR — SNData
+// (favoritos, colecções, histórico, notificações, downloads, exportações)
+// ════════════════════════════════════════
+const SNData = {
+  // -- Favoritos --
+  getFavorites(uid) { return snRead(SN_KEYS.FAV(uid), []); },
+  isFavorite(uid, key) { return this.getFavorites(uid).some(p => p._key === key); },
+  addFavorite(uid, paper) {
+    const list = this.getFavorites(uid);
+    if (list.some(p => p._key === paper._key)) return list;
+    list.unshift({ ...paper, savedAt: Date.now() });
+    snWrite(SN_KEYS.FAV(uid), list);
+    return list;
+  },
+  removeFavorite(uid, key) {
+    const list = this.getFavorites(uid).filter(p => p._key !== key);
+    snWrite(SN_KEYS.FAV(uid), list);
+    return list;
+  },
+
+  // -- Colecções --
+  getCollections(uid) { return snRead(SN_KEYS.COL(uid), []); },
+  createCollection(uid, name) {
+    const list = this.getCollections(uid);
+    const col = { id: snUid(), name, createdAt: Date.now(), items: [] };
+    list.push(col);
+    snWrite(SN_KEYS.COL(uid), list);
+    return col;
+  },
+  deleteCollection(uid, colId) {
+    snWrite(SN_KEYS.COL(uid), this.getCollections(uid).filter(c => c.id !== colId));
+  },
+  addToCollection(uid, colId, paper) {
+    const list = this.getCollections(uid);
+    const col = list.find(c => c.id === colId);
+    if (!col) return list;
+    if (!col.items.some(p => p._key === paper._key)) col.items.unshift(paper);
+    snWrite(SN_KEYS.COL(uid), list);
+    return list;
+  },
+  removeFromCollection(uid, colId, key) {
+    const list = this.getCollections(uid);
+    const col = list.find(c => c.id === colId);
+    if (col) col.items = col.items.filter(p => p._key !== key);
+    snWrite(SN_KEYS.COL(uid), list);
+    return list;
+  },
+
+  // -- Histórico de pesquisas --
+  getHistory(uid) { return snRead(SN_KEYS.HIST(uid), []); },
+  addHistory(uid, query) {
+    const list = [{ query, at: Date.now() }, ...this.getHistory(uid).filter(h => h.query !== query)].slice(0, 50);
+    snWrite(SN_KEYS.HIST(uid), list);
+    return list;
+  },
+  clearHistory(uid) { snWrite(SN_KEYS.HIST(uid), []); },
+
+  // -- Notificações --
+  getNotifications(uid) { return snRead(SN_KEYS.NOTIF(uid), []); },
+  addNotification(uid, title, body) {
+    const list = this.getNotifications(uid);
+    list.unshift({ id: snUid(), title, body, read: false, createdAt: Date.now() });
+    snWrite(SN_KEYS.NOTIF(uid), list.slice(0, 100));
+    return list;
+  },
+  unreadCount(uid) { return this.getNotifications(uid).filter(n => !n.read).length; },
+  markAllRead(uid) {
+    const list = this.getNotifications(uid).map(n => ({ ...n, read: true }));
+    snWrite(SN_KEYS.NOTIF(uid), list);
+    return list;
+  },
+
+  // -- Downloads (PDFs / acesso alternativo) --
+  getDownloads(uid) { return snRead(SN_KEYS.DOWN(uid), []); },
+  addDownload(uid, item) {
+    const list = this.getDownloads(uid);
+    list.unshift({ ...item, at: Date.now() });
+    snWrite(SN_KEYS.DOWN(uid), list.slice(0, 200));
+    return list;
+  },
+
+  // -- Exportações --
+  getExports(uid) { return snRead(SN_KEYS.EXPORT(uid), []); },
+  addExport(uid, format, count) {
+    const list = this.getExports(uid);
+    list.unshift({ format, count, at: Date.now() });
+    snWrite(SN_KEYS.EXPORT(uid), list.slice(0, 100));
+    return list;
+  },
+
+  // -- Alertas de novos artigos (usado pela pesquisa em index.html) --
+  registerSeenAndNotify(uid, query, papers) {
+    const seenKey = SN_KEYS.SEEN_DOIS(uid);
+    const seen = new Set(snRead(seenKey, []));
+    const fresh = papers.filter(p => p._key && !seen.has(p._key));
+    papers.forEach(p => p._key && seen.add(p._key));
+    snWrite(seenKey, Array.from(seen).slice(-2000));
+    if (fresh.length > 0) {
+      this.addNotification(uid, `${fresh.length} novo(s) artigo(s) para "${query}"`,
+        fresh.slice(0, 3).map(p => p.title).join(' · '));
+    }
+    return fresh.length;
+  },
+};
+
+// Inicializa a base de dados local (cria conta admin semente, etc.)
+SNAuth.init();
+
+</script>
+<script>
+/* ============================================================
+   SCHOLAR NEXUS — sn-ui.js
+   Componentes de interface partilhados por todas as páginas:
+   barra superior consciente da sessão, painel de notificações,
+   score científico e tradução automática de resumos.
+   ============================================================ */
+
+// ════════════════════════════════════════
+// SCORE CIENTÍFICO
+// ════════════════════════════════════════
+const SNScore = {
+  // Calcula um score de 0 a 100 a partir de sinais já disponíveis nos
+  // metadados normalizados (citações, ano, DOI, acesso aberto, fonte).
+  // IMPORTANTE: o "Quartil estimado" (Q1–Q4) e o "Índice de fiabilidade"
+  // são ESTIMATIVAS calculadas localmente a partir destes mesmos sinais —
+  // NÃO são dados reais da Scimago/Clarivate (que exigiriam conta/chave
+  // paga). Estão claramente identificados como "estimado" na interface.
+  // Documentado em docs/ARQUITECTURA-BACKEND.md como candidato a, no
+  // futuro, ligar à API gratuita pública do Scimago Journal Rank por ISSN.
+  compute(p) {
+    let s = 0;
+    // Citações (0–35 pontos, escala logarítmica para não dominar o score)
+    const c = p.citations || 0;
+    s += Math.min(35, Math.log10(c + 1) * 13);
+    // Recência (0–20 pontos)
+    const year = p.year || 2000;
+    const age = Math.max(0, new Date().getFullYear() - year);
+    s += Math.max(0, 20 - age * 1.2);
+    // DOI presente (10 pontos) — indício de indexação formal
+    if (p.doi) s += 10;
+    // Acesso aberto (15 pontos)
+    if (p.isOA || p.pdfUrl || p.arxivId) s += 15;
+    // Resumo / TLDR disponível (10 pontos) — indício de registo completo
+    if (p.abstract) s += 6;
+    if (p.tldr) s += 4;
+    // Diversidade de fonte (10 pontos) — bases mais curadas pontuam um pouco mais
+    const curated = ['PubMed', 'Europe PMC', 'CrossRef', 'DOAJ', 'OpenAIRE'];
+    if (curated.includes(p.source)) s += 10; else s += 5;
+    s = Math.max(1, Math.min(100, Math.round(s)));
+    const stars = Math.max(1, Math.min(5, Math.round(s / 20)));
+    let label = 'Razoável';
+    if (s >= 85) label = 'Excelente';
+    else if (s >= 65) label = 'Muito bom';
+    else if (s >= 45) label = 'Bom';
+    else if (s < 25) label = 'Limitado';
+
+    // Quartil estimado — apenas uma aproximação a partir do score local
+    let quartile = 'Q4';
+    if (s >= 80) quartile = 'Q1';
+    else if (s >= 60) quartile = 'Q2';
+    else if (s >= 40) quartile = 'Q3';
+
+    // Índice de fiabilidade — combina presença de DOI, acesso aberto e fonte curada
+    let reliability = 'Baixa';
+    const relPoints = (p.doi ? 1 : 0) + ((p.isOA || p.pdfUrl) ? 1 : 0) + (curated.includes(p.source) ? 1 : 0);
+    if (relPoints >= 3) reliability = 'Alta';
+    else if (relPoints === 2) reliability = 'Média';
+
+    // Popularidade — percentil aproximado de citações (heurística local)
+    let popularity = 'Pouco citado';
+    if (c >= 200) popularity = 'Muito popular';
+    else if (c >= 50) popularity = 'Popular';
+    else if (c >= 10) popularity = 'Moderado';
+
+    return { score: s, stars, label, quartile, reliability, popularity, citations: c };
+  },
+  badgeHtml(p) {
+    const r = this.compute(p);
+    const color = r.score >= 65 ? '#22c55e' : (r.score >= 40 ? '#f59e0b' : '#E8312A');
+    const starsHtml = '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars);
+    const tooltip = `Score científico estimado: ${r.label}\nQuartil estimado: ${r.quartile}\nFiabilidade: ${r.reliability}\nPopularidade: ${r.popularity} (${r.citations} citações)\n\nNota: quartil e fiabilidade são estimativas locais, não dados oficiais da Scimago.`;
+    return `<span class="sci-score" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:${color}1f;color:${color};border:1px solid ${color}40" title="${tooltip.replace(/"/g,'&quot;')}">
+      <i class="fa-solid fa-chart-line" style="font-size:9px"></i>${r.score}/100
+      <span style="font-size:9px;letter-spacing:1px">${starsHtml}</span>
+      <span style="font-size:9px;opacity:.85;border-left:1px solid ${color}55;padding-left:5px;margin-left:2px">${r.quartile} est.</span>
+    </span>`;
+  },
+};
+
+// ════════════════════════════════════════
+// TRADUÇÃO AUTOMÁTICA DE RESUMOS
+// ════════════════════════════════════════
+// ════════════════════════════════════════
+// SNAi — Inteligência Artificial (Gemini ou DeepSeek)
+// ------------------------------------------------------------
+// Não vem com nenhuma chave incluída. O utilizador cola a SUA
+// própria chave gratuita (Google AI Studio ou DeepSeek Platform)
+// no Painel → Definições → Inteligência Artificial. Enquanto não
+// houver chave configurada, todos os botões de IA ficam ocultos
+// (ver SNAi.isReady() chamado antes de renderizar qualquer botão).
+// ════════════════════════════════════════
+const SNAi = {
+  PROVIDERS: {
+    gemini:   { label: 'Google Gemini',  model: 'gemini-1.5-flash' },
+    deepseek: { label: 'DeepSeek',       model: 'deepseek-chat' },
+  },
+  getConfig() {
+    return {
+      provider: localStorage.getItem('sn_ai_provider') || '',
+      key: localStorage.getItem('sn_ai_key') || '',
+    };
+  },
+  setConfig(provider, key) {
+    localStorage.setItem('sn_ai_provider', provider || '');
+    localStorage.setItem('sn_ai_key', key || '');
+  },
+  isReady() {
+    const c = this.getConfig();
+    return !!(c.provider && c.key && this.PROVIDERS[c.provider]);
+  },
+  // Chamada genérica de "chat" — devolve texto puro da resposta da IA.
+  async ask(prompt) {
+    const { provider, key } = this.getConfig();
+    if (!provider || !key) throw new Error('Nenhuma chave de IA configurada. Vá a Definições → Inteligência Artificial.');
+    if (provider === 'gemini') {
+      const model = this.PROVIDERS.gemini.model;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+      const r = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      });
+      if (!r.ok) {
+        const errBody = await r.text().catch(()=>'');
+        throw new Error(`Gemini respondeu ${r.status}. Verifique se a chave está correcta. ${errBody.slice(0,180)}`);
+      }
+      const d = await r.json();
+      const text = d?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('') || '';
+      if (!text) throw new Error('A IA não devolveu resposta. Tente novamente.');
+      return text;
+    }
+    if (provider === 'deepseek') {
+      const r = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({ model: this.PROVIDERS.deepseek.model, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (!r.ok) {
+        const errBody = await r.text().catch(()=>'');
+        throw new Error(`DeepSeek respondeu ${r.status}. Verifique se a chave está correcta. ${errBody.slice(0,180)}`);
+      }
+      const d = await r.json();
+      const text = d?.choices?.[0]?.message?.content || '';
+      if (!text) throw new Error('A IA não devolveu resposta. Tente novamente.');
+      return text;
+    }
+    throw new Error('Fornecedor de IA desconhecido.');
+  },
+  // Acções específicas, em português de Moçambique, pré-acordo ortográfico.
+  summarize(paper) {
+    const base = paper.abstract || paper.title || '';
+    return this.ask(`Resume em português de Moçambique (pré-Acordo Ortográfico de 1990), em no máximo 6 frases curtas, o seguinte artigo científico. Sê objectivo e claro, sem inventar dados que não estejam no texto.\n\nTítulo: ${paper.title}\n\nResumo original: ${base}`);
+  },
+  explain(paper) {
+    const base = paper.abstract || paper.title || '';
+    return this.ask(`Explica de forma simples, como se fosse para um estudante universitário em Moçambique, o que este artigo científico demonstra, qual é a importância prática dos resultados, e quais são as principais limitações do estudo. Usa português de Moçambique pré-Acordo Ortográfico.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+  },
+  generateQuestions(paper) {
+    const base = paper.abstract || paper.title || '';
+    return this.ask(`Com base neste artigo científico, gera 5 perguntas de estudo (estilo exame universitário) que testem a compreensão do conteúdo, em português de Moçambique pré-Acordo Ortográfico. Numera as perguntas.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+  },
+  conceptMap(paper) {
+    const base = paper.abstract || paper.title || '';
+    return this.ask(`Com base neste artigo científico, cria um mapa conceptual em formato de lista hierárquica (com indentação por hífens), mostrando o conceito central e os 4-6 conceitos relacionados mais importantes, em português de Moçambique pré-Acordo Ortográfico.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+  },
+};
+
+const SNTranslate = {
+  // Usa a API pública e gratuita MyMemory (sem chave de API), com
+  // fragmentação automática para respeitar o limite de ~500 caracteres
+  // por pedido. Arquitectura preparada para, no futuro, alternar entre
+  // OpenAI, DeepL, Google Translate ou LibreTranslate (ver CFG.TRANSLATE_PROVIDER
+  // em sn-core.js e docs/ARQUITECTURA-BACKEND.md).
+  async translate(text, targetLang = 'pt') {
+    if (!text) return '';
+    const chunks = this._chunk(text, 480);
+    const out = [];
+    for (const chunk of chunks) {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=en|${targetLang}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('Falha no serviço de tradução.');
+      const d = await r.json();
+      const t = d?.responseData?.translatedText;
+      if (!t) throw new Error('Resposta de tradução inválida.');
+      out.push(t);
+    }
+    return out.join(' ');
+  },
+  _chunk(text, size) {
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    const chunks = []; let cur = '';
+    for (const s of sentences) {
+      if ((cur + ' ' + s).trim().length > size) { if (cur) chunks.push(cur.trim()); cur = s; }
+      else cur = (cur + ' ' + s).trim();
+    }
+    if (cur) chunks.push(cur.trim());
+    return chunks.length ? chunks : [text.slice(0, size)];
+  },
+};
+
+// ════════════════════════════════════════
+// TOAST (feedback rápido de acções)
+// ════════════════════════════════════════
+const SNToast = {
+  ensure() {
+    if (document.getElementById('snToastHost')) return;
+    const host = document.createElement('div');
+    host.id = 'snToastHost';
+    host.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px;align-items:flex-end';
+    document.body.appendChild(host);
+  },
+  show(msg, type = 'info') {
+    this.ensure();
+    const colors = { info: '#3B6EC8', success: '#22c55e', error: '#E8312A', warning: '#f59e0b' };
+    const el = document.createElement('div');
+    el.style.cssText = `background:#1a2035;border:1px solid ${colors[type]}55;border-left:3px solid ${colors[type]};color:#f0f2f8;padding:11px 16px;border-radius:9px;font-size:13px;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:320px;opacity:0;transform:translateY(8px);transition:all .25s`;
+    el.textContent = msg;
+    document.getElementById('snToastHost').appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 250); }, 3600);
+  },
+};
+
+// ════════════════════════════════════════
+// BARRA SUPERIOR — estado de sessão + notificações
+// ════════════════════════════════════════
+const SNUI = {
+  relPath(file) {
+    const inSub = /\/(dashboard|admin)\/?($|[^/]+$)/.test(location.pathname);
+    return inSub ? '../' + file : file;
+  },
+
+  formatDate(ts) {
+    return new Date(ts).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
+  },
+  formatDateTime(ts) {
+    return new Date(ts).toLocaleString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  },
+
+  // Injecta, dentro de #topbarAuthSlot, ou os botões de Entrar/Registar
+  // ou o avatar do utilizador + sino de notificações, conforme a sessão.
+  mountTopbar() {
+    const slot = document.getElementById('topbarAuthSlot');
+    if (!slot) return;
+    const user = SNAuth.getCurrentUser();
+    if (!user) {
+      slot.innerHTML = `
+        <a class="nav-link" href="${this.relPath('login.html')}">Entrar</a>
+        <a class="btn-trial" href="${this.relPath('register.html')}"><i class="fa-solid fa-arrow-right" style="font-size:11px"></i> Acesso Gratuito</a>`;
+      return;
+    }
+    const initials = (user.name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
+    const unread = SNData.unreadCount(user.id);
+    slot.innerHTML = `
+      <div style="position:relative">
+        <button class="bell-btn" id="snBellBtn" aria-label="Notificações"><i class="fa-regular fa-bell"></i>
+          ${unread ? `<span class="bell-dot">${unread > 9 ? '9+' : unread}</span>` : ''}
+        </button>
+        <div class="notif-panel" id="snNotifPanel"></div>
+      </div>
+      ${user.role === 'admin' ? `<a class="nav-link" href="${this.relPath('admin/index.html')}"><i class="fa-solid fa-shield-halved" style="margin-right:5px"></i>Admin</a>` : ''}
+      <a class="user-chip" href="${this.relPath('dashboard/index.html')}">
+        <span class="user-avatar">${initials}</span>
+        <span>
+          <div class="uname">${user.name.split(' ')[0]}</div>
+          <div class="uplan">${SNPlans.get(user.plan).label}</div>
+        </span>
+      </a>`;
+    document.getElementById('snBellBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.renderNotifPanel(user.id);
+      document.getElementById('snNotifPanel').classList.toggle('open');
+    });
+    document.addEventListener('click', () => document.getElementById('snNotifPanel')?.classList.remove('open'));
+  },
+
+  renderNotifPanel(uid) {
+    const panel = document.getElementById('snNotifPanel');
+    if (!panel) return;
+    const list = SNData.getNotifications(uid);
+    if (!list.length) {
+      panel.innerHTML = `<h4>Notificações</h4><div class="notif-empty"><i class="fa-regular fa-bell-slash" style="display:block;font-size:20px;margin-bottom:8px"></i>Sem notificações por agora.</div>`;
+      return;
+    }
+    panel.innerHTML = `<h4 style="display:flex;justify-content:space-between;align-items:center">Notificações
+        <button onclick="SNData.markAllRead('${uid}');SNUI.renderNotifPanel('${uid}');SNUI.mountTopbar();" style="background:none;border:none;color:var(--blue-light);font-size:11px;cursor:pointer;font-family:inherit">Marcar lidas</button></h4>` +
+      list.slice(0, 25).map(n => `
+        <div class="notif-item ${n.read ? '' : 'unread'}">
+          <b>${n.title}</b>${n.body || ''}
+          <time>${this.formatDateTime(n.createdAt)}</time>
+        </div>`).join('');
+  },
+
+  toast(msg, type) { SNToast.show(msg, type); },
+};
+
+document.addEventListener('DOMContentLoaded', () => SNUI.mountTopbar());
+
+</script>
+<script>
+// Citação pronta a colar — formato APA 7ª edição (mesma lógica do index.html)
+function buildAPA(p) {
+  const authorsList = (p.authors || 'Autor desconhecido').split(',').map(a => a.trim()).filter(Boolean);
+  const apaAuthors = authorsList.map(full => {
+    const parts = full.split(' ').filter(Boolean);
+    if (parts.length < 2) return full;
+    const surname = parts.pop();
+    const initials = parts.map(n => n[0]?.toUpperCase() + '.').join(' ');
+    return `${surname}, ${initials}`;
+  });
+  let authorStr;
+  if (apaAuthors.length === 0) authorStr = 'Autor desconhecido';
+  else if (apaAuthors.length === 1) authorStr = apaAuthors[0];
+  else if (apaAuthors.length <= 20) authorStr = apaAuthors.slice(0,-1).join(', ') + ', & ' + apaAuthors[apaAuthors.length-1];
+  else authorStr = apaAuthors.slice(0,19).join(', ') + ', ... ' + apaAuthors[apaAuthors.length-1];
+  const year = p.year ? `(${p.year})` : '(s.d.)';
+  const title = p.title ? p.title.replace(/\.$/, '') : 'Sem título';
+  const doiLine = p.doi ? `https://doi.org/${p.doi}` : (p.pageUrl || '');
+  return `${authorStr}. ${year}. ${title}. ${p.source || ''}. ${doiLine}`.replace(/\s+\./g, '.').trim();
+}
+
+function getSet() {
+  try { return JSON.parse(sessionStorage.getItem('sn_compare_set') || '[]'); } catch (e) { return []; }
+}
+function saveSet(list) { sessionStorage.setItem('sn_compare_set', JSON.stringify(list)); }
+
+function removeFromCompare(key) {
+  saveSet(getSet().filter(p => p._key !== key));
+  render();
+}
+
+function bestIndex(values, higherBetter = true) {
+  let best = -1, bestVal = higherBetter ? -Infinity : Infinity;
+  values.forEach((v, i) => {
+    if (v == null) return;
+    if ((higherBetter && v > bestVal) || (!higherBetter && v < bestVal)) { bestVal = v; best = i; }
+  });
+  return best;
+}
+
+function render() {
+  const list = getSet();
+  const el = document.getElementById('cmpContent');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-block"><i class="fa-solid fa-scale-balanced"></i><h4>Nenhum artigo seleccionado</h4>
+      <p>Vá à página de pesquisa, marque a caixa "Comparar" em até 4 artigos e clique em "Comparar agora".</p>
+      <a href="index.html" class="btn-primary mt-20" style="display:inline-flex"><i class="fa-solid fa-magnifying-glass"></i> Ir para a pesquisa</a></div>`;
+    return;
+  }
+  const scores = list.map(p => SNScore.compute(p).score);
+  const citations = list.map(p => p.citations ?? null);
+  const years = list.map(p => p.year ?? null);
+  const bestScoreIdx = bestIndex(scores);
+  const bestCiteIdx = bestIndex(citations);
+  const bestYearIdx = bestIndex(years);
+
+  const rows = [
+    { label: 'Autores', cells: list.map(p => p.authors || '—') },
+    { label: 'Ano', cells: list.map((p, i) => `${p.year || '—'} ${i === bestYearIdx ? '<span class="winner">(mais recente)</span>' : ''}`) },
+    { label: 'Fonte', cells: list.map(p => p.source || '—') },
+    { label: 'DOI', cells: list.map(p => p.doi ? `<a href="https://doi.org/${p.doi}" target="_blank" rel="noopener" style="color:var(--blue-light)">${p.doi}</a>` : '—') },
+    { label: 'Acesso aberto', cells: list.map(p => (p.isOA || p.pdfUrl) ? '<span style="color:var(--success)"><i class="fa-solid fa-lock-open"></i> Sim</span>' : 'Não') },
+    { label: 'Citações', cells: list.map((p, i) => `${p.citations ?? '—'} ${i === bestCiteIdx && p.citations ? '<span class="winner">(mais citado)</span>' : ''}`) },
+    { label: 'Score científico', cells: list.map((p, i) => `${SNScore.badgeHtml(p)} ${i === bestScoreIdx ? '<div class="winner mt-8" style="font-size:11px">★ Melhor classificado</div>' : ''}`) },
+    { label: 'Quartil estimado', cells: list.map(p => `${SNScore.compute(p).quartile} <span style="color:var(--text3);font-size:11px">(estimativa local)</span>`) },
+    { label: 'Fiabilidade estimada', cells: list.map(p => SNScore.compute(p).reliability) },
+    { label: 'Popularidade', cells: list.map(p => SNScore.compute(p).popularity) },
+    { label: 'PDF', cells: list.map(p => p.pdfUrl ? `<a href="${p.pdfUrl}" target="_blank" rel="noopener" class="btn-secondary btn-sm"><i class="fa-solid fa-file-pdf"></i> Abrir</a>` : '—') },
+    { label: 'Resumo', cells: list.map(p => `<div style="max-width:260px;font-size:12px;line-height:1.6">${(p.abstract || p.tldr || 'Sem resumo disponível.').slice(0, 240)}${(p.abstract || '').length > 240 ? '…' : ''}</div>`) },
+    { label: 'Citação APA', cells: list.map(p => `<div style="max-width:260px;font-size:11.5px;line-height:1.6;color:var(--text2)">${buildAPA(p)}</div>`) },
+  ];
+
+  el.innerHTML = `<div class="compare-scroll"><table class="cmp">
+    <thead><tr>
+      <th class="row-label">Artigo</th>
+      ${list.map(p => `<th class="art-col">
+        <button class="remove-x" onclick="removeFromCompare('${p._key}')" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+        ${p.title}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr><td class="row-label">${r.label}</td>${r.cells.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+render();
+</script>
+</body>
+</html>
