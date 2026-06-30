@@ -236,6 +236,23 @@ table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
   .side-link { white-space: nowrap; }
   .app-main { padding: 20px 16px; }
 }
+/* ── INTERACTIVIDADE MÓVEL — alvos de toque maiores em ecrãs pequenos ── */
+@media (max-width: 640px) {
+  .btn-primary, .btn-secondary, .btn-danger, .btn-trial,
+  .method-opt, .export-opt, .filter-btn, .action-btn {
+    min-height: 42px;
+  }
+  .modal { width: 94%; padding: 20px; max-height: 88vh; overflow-y: auto; }
+  .modal h3 { font-size: 15px; }
+  .page-wrap { padding: 24px 14px 60px; }
+  .card { padding: 18px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar { padding: 0 10px; gap: 8px; }
+  .topbar-right { gap: 6px; }
+  table.data-table { font-size: 12px; }
+  table.data-table th, table.data-table td { padding: 8px; }
+}
+
 
 /* ── STAT CARDS ── */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 14px; margin-bottom: 20px; }
@@ -680,29 +697,81 @@ const SNAuth = {
   _users() { return snRead(SN_KEYS.USERS, []); },
   _saveUsers(list) { snWrite(SN_KEYS.USERS, list); },
 
-  async register({ name, email, password, tipo }) {
+  // Junta os utilizadores guardados na nuvem (Firestore) aos que já
+  // existem neste navegador. A nuvem é a fonte de verdade quando
+  // configurada — é o que permite ao administrador ver utilizadores
+  // registados noutros dispositivos. Sem configuração da nuvem, esta
+  // função não faz nada e tudo continua a funcionar apenas localmente.
+  async syncUsersFromCloud() {
+    if (!SNCloud.isReady()) return;
+    const cloudUsers = await SNCloud.fetchAll('users');
+    if (!cloudUsers.length) return;
+    const local = this._users();
+    const map = new Map(local.map(u => [u.id, u]));
+    cloudUsers.forEach(cu => map.set(cu.id, cu));
+    this._saveUsers(Array.from(map.values()));
+  },
+  async syncPaymentsFromCloud() {
+    if (!SNCloud.isReady()) return;
+    const cloudPayments = await SNCloud.fetchAll('payments');
+    if (!cloudPayments.length) return;
+    const local = snRead(SN_KEYS.PAYMENTS, []);
+    const map = new Map(local.map(p => [p.id, p]));
+    cloudPayments.forEach(cp => map.set(cp.id, cp));
+    snWrite(SN_KEYS.PAYMENTS, Array.from(map.values()));
+  },
+
+  async register({ name, email, password, tipo, secQuestion, secAnswer }) {
     await this._ensureInit();
+    await this.syncUsersFromCloud(); // garante que não há duplicados criados noutro dispositivo
     email = (email || '').trim().toLowerCase();
     if (!name || !email || !password) throw new Error('Preencha todos os campos obrigatórios.');
     if (password.length < 6) throw new Error('A palavra-passe deve ter pelo menos 6 caracteres.');
     const users = this._users();
     if (users.some(u => u.email === email)) throw new Error('Já existe uma conta registada com este email.');
     const passwordHash = await snHash(password);
+    const secAnswerHash = secAnswer ? await snHash(secAnswer.trim().toLowerCase()) : null;
     const user = {
       id: snUid(), name, email, passwordHash, role: 'user', tipo: tipo || 'estudante',
       plan: 'gratuito', planStatus: 'ativo', createdAt: Date.now(),
-      usage: { searches: 0, exports: 0, periodStart: Date.now() },
+      secQuestion: secQuestion || '', secAnswerHash,
+      usage: { searches: 0, exports: 0, downloads: 0, periodStart: Date.now() },
     };
     users.push(user);
     this._saveUsers(users);
+    SNCloud.upsert('users', user.id, user); // envia para a base de dados partilhada (se configurada)
     SNData.addNotification(user.id, 'Bem-vindo(a) ao Scholar Nexus', 'A sua conta foi criada com sucesso no plano Gratuito.');
     this.addLog('registo', `Novo utilizador registado: ${email}`, user.id);
     this._setSession(user.id);
     return this.sanitize(user);
   },
 
+  // ── Recuperação de palavra-passe (via pergunta de segurança) ──
+  getSecurityQuestion(email) {
+    const user = this._users().find(u => u.email === (email||'').trim().toLowerCase());
+    return user ? (user.secQuestion || null) : null;
+  },
+  async recoverPassword(email, answer, newPassword) {
+    await this._ensureInit();
+    await this.syncUsersFromCloud();
+    const users = this._users();
+    const idx = users.findIndex(u => u.email === (email||'').trim().toLowerCase());
+    if (idx === -1) throw new Error('Não existe nenhuma conta com este email.');
+    const user = users[idx];
+    if (!user.secAnswerHash) throw new Error('Esta conta não tem pergunta de segurança definida. Contacte o administrador.');
+    if (!newPassword || newPassword.length < 6) throw new Error('A nova palavra-passe deve ter pelo menos 6 caracteres.');
+    const answerHash = await snHash((answer||'').trim().toLowerCase());
+    if (answerHash !== user.secAnswerHash) throw new Error('Resposta incorrecta.');
+    users[idx].passwordHash = await snHash(newPassword);
+    this._saveUsers(users);
+    SNCloud.upsert('users', users[idx].id, users[idx]);
+    this.addLog('recuperacao', `Palavra-passe recuperada via pergunta de segurança: ${user.email}`, user.id);
+    return true;
+  },
+
   async login(email, password) {
     await this._ensureInit();
+    await this.syncUsersFromCloud(); // permite entrar com uma conta criada noutro dispositivo
     email = (email || '').trim().toLowerCase();
     const users = this._users();
     const user = users.find(u => u.email === email);
@@ -779,6 +848,7 @@ const SNAuth = {
     if (idx === -1) return null;
     users[idx] = { ...users[idx], ...patch };
     this._saveUsers(users);
+    SNCloud.upsert('users', id, users[idx]);
     return this.sanitize(users[idx]);
   },
 
@@ -788,6 +858,7 @@ const SNAuth = {
 
   deleteUser(id) {
     this._saveUsers(this._users().filter(u => u.id !== id));
+    SNCloud.remove('users', id);
     this.addLog('admin', `Utilizador removido (id: ${id})`, null);
   },
 
@@ -828,20 +899,22 @@ const SNAuth = {
   // transacção com estado 'pendente', tal como aconteceria ao iniciar
   // um checkout real com Stripe/PayPal/M-Pesa/e-Mola. A confirmação real
   // exigiria o backend (webhook do gateway) — ver docs/ARQUITECTURA-BACKEND.md.
-  createCheckout(planKey, method) {
+  createCheckout(planKey, method, reference) {
     const user = this.getCurrentUserRaw();
     if (!user) throw new Error('É necessário iniciar sessão para subscrever um plano.');
     const plan = SNPlans.get(planKey);
     const payments = snRead(SN_KEYS.PAYMENTS, []);
     const payment = {
-      id: snUid(), userId: user.id, plan: planKey, method,
+      id: snUid(), userId: user.id, plan: planKey, method, reference: reference || '',
       amount: plan.price, currency: plan.currency, status: 'pendente',
       createdAt: Date.now(),
     };
     payments.push(payment);
     snWrite(SN_KEYS.PAYMENTS, payments);
+    SNCloud.upsert('payments', payment.id, payment);
     this.updateUser(user.id, { planStatus: 'pendente' });
-    this.addLog('pagamento', `Checkout iniciado: plano ${plan.label} via ${method}`, user.id);
+    this.addLog('pagamento', `Pedido de pagamento: plano ${plan.label} via ${method}${reference ? ' (ref: '+reference+')' : ''} — aguarda aprovação do administrador`, user.id);
+    SNData.addNotification(user.id, 'Pedido de pagamento enviado', `O seu pedido para o plano ${plan.label} via ${method.toUpperCase()} foi enviado ao administrador. Será notificado quando o plano for activado.`);
     return payment;
   },
 
@@ -855,10 +928,11 @@ const SNAuth = {
     payments[idx].status = 'ativo';
     payments[idx].confirmedAt = Date.now();
     snWrite(SN_KEYS.PAYMENTS, payments);
+    SNCloud.upsert('payments', payments[idx].id, payments[idx]);
     const pay = payments[idx];
     this.updateUser(pay.userId, { plan: pay.plan, planStatus: 'ativo' });
     SNData.addNotification(pay.userId, 'Subscrição activada', `O plano ${SNPlans.get(pay.plan).label} está agora activo.`);
-    this.addLog('pagamento', `Pagamento confirmado (sandbox): ${pay.method} — plano ${pay.plan}`, pay.userId);
+    this.addLog('pagamento', `Pagamento aprovado pelo administrador: ${pay.method} — plano ${pay.plan}`, pay.userId);
     return pay;
   },
 
@@ -1094,9 +1168,94 @@ const SNScore = {
 // houver chave configurada, todos os botões de IA ficam ocultos
 // (ver SNAi.isReady() chamado antes de renderizar qualquer botão).
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+// SNAi — Inteligência Artificial (Gemini ou DeepSeek)
+// ------------------------------------------------------------
+// Não vem com nenhuma chave incluída. O utilizador cola a SUA
+// própria chave gratuita (Google AI Studio ou DeepSeek Platform)
+// no Painel → Definições → Inteligência Artificial. Enquanto não
+// houver chave configurada, todos os botões de IA ficam ocultos
+// (ver SNAi.isReady() chamado antes de renderizar qualquer botão).
+// ════════════════════════════════════════
+// ════════════════════════════════════════
+// SNCloud — Base de dados partilhada (Firebase Realtime Database, gratuito)
+// ------------------------------------------------------------
+// Sem isto, cada navegador tem o seu próprio armazém de dados
+// (localStorage) e o administrador NUNCA vê utilizadores que se
+// registaram noutro dispositivo. Com a configuração da Realtime
+// Database (gratuita, sem necessidade de cartão de crédito — ver
+// Painel do Administrador → Configurações → Nuvem), utilizadores e
+// pagamentos passam a ser partilhados entre todos os dispositivos.
+// Favoritos, colecções e histórico continuam apenas no dispositivo
+// de cada utilizador (não são sincronizados nesta versão).
+//
+// Usamos a Realtime Database em vez da Firestore porque a Firestore
+// passou a exigir uma conta de facturação associada ao projecto
+// (mesmo para uso gratuito), enquanto a Realtime Database normalmente
+// não exige isso.
+// ════════════════════════════════════════
+const SNCloud = {
+  getConfig() {
+    return { dbUrl: (localStorage.getItem('sn_cloud_dburl') || '').replace(/\/+$/, '') };
+  },
+  setConfig(dbUrl) {
+    localStorage.setItem('sn_cloud_dburl', (dbUrl || '').trim().replace(/\/+$/, ''));
+  },
+  isReady() {
+    return !!this.getConfig().dbUrl;
+  },
+  async upsert(collection, id, obj) {
+    if (!this.isReady()) return;
+    try {
+      const { dbUrl } = this.getConfig();
+      await fetch(`${dbUrl}/${collection}/${encodeURIComponent(id)}.json`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(obj),
+      });
+    } catch (e) { console.warn('SNCloud.upsert falhou:', e); }
+  },
+  async remove(collection, id) {
+    if (!this.isReady()) return;
+    try {
+      const { dbUrl } = this.getConfig();
+      await fetch(`${dbUrl}/${collection}/${encodeURIComponent(id)}.json`, { method: 'DELETE' });
+    } catch (e) { console.warn('SNCloud.remove falhou:', e); }
+  },
+  async fetchAll(collection) {
+    if (!this.isReady()) return [];
+    try {
+      const { dbUrl } = this.getConfig();
+      const r = await fetch(`${dbUrl}/${collection}.json`);
+      if (!r.ok) { console.warn('SNCloud.fetchAll respondeu', r.status); return []; }
+      const d = await r.json();
+      if (!d || typeof d !== 'object') return [];
+      return Object.entries(d).map(([id, val]) => ({ id, ...val }));
+    } catch (e) { console.warn('SNCloud.fetchAll falhou:', e); return []; }
+  },
+  async testConnection() {
+    if (!this.isReady()) throw new Error('Cole primeiro o endereço da Realtime Database.');
+    const { dbUrl } = this.getConfig();
+    if (!/^https:\/\/.+\.firebasedatabase\.app$|^https:\/\/.+\.firebaseio\.com$/.test(dbUrl)) {
+      throw new Error('O endereço deve começar por https:// e terminar em .firebaseio.com ou .firebasedatabase.app — copie-o exactamente da consola do Firebase.');
+    }
+    const r = await fetch(`${dbUrl}/_sn_test.json`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true, at: Date.now() }),
+    });
+    if (r.status === 401 || r.status === 403) {
+      throw new Error('Acesso negado. Verifique as regras da Realtime Database — devem permitir leitura/escrita (".read": true, ".write": true — ver guia).');
+    }
+    if (!r.ok) throw new Error(`A Realtime Database respondeu ${r.status}. Verifique o endereço colado.`);
+    return true;
+  },
+};
+
 const SNAi = {
   PROVIDERS: {
-    gemini:   { label: 'Google Gemini',  model: 'gemini-1.5-flash' },
+    // Tenta vários nomes de modelo Gemini por ordem — a Google
+    // descontinua modelos antigos periodicamente, por isso usamos
+    // uma lista de fallback em vez de um único nome fixo.
+    gemini:   { label: 'Google Gemini',  models: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'] },
     deepseek: { label: 'DeepSeek',       model: 'deepseek-chat' },
   },
   getConfig() {
@@ -1117,22 +1276,38 @@ const SNAi = {
   async ask(prompt) {
     const { provider, key } = this.getConfig();
     if (!provider || !key) throw new Error('Nenhuma chave de IA configurada. Vá a Definições → Inteligência Artificial.');
+
     if (provider === 'gemini') {
-      const model = this.PROVIDERS.gemini.model;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-      const r = await fetch(url, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-      });
-      if (!r.ok) {
-        const errBody = await r.text().catch(()=>'');
-        throw new Error(`Gemini respondeu ${r.status}. Verifique se a chave está correcta. ${errBody.slice(0,180)}`);
+      const models = this.PROVIDERS.gemini.models;
+      let lastErr = null;
+      for (const model of models) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+          const r = await fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          });
+          if (!r.ok) {
+            const errBody = await r.text().catch(()=>'');
+            if (r.status === 404) { lastErr = new Error(`Modelo "${model}" não disponível na sua conta — a tentar o próximo modelo…`); continue; }
+            if (r.status === 400) throw new Error('A chave do Gemini parece inválida ou mal colada. Confirme em aistudio.google.com/apikey.');
+            if (r.status === 429) throw new Error('Atingiu o limite gratuito de pedidos do Gemini por agora. Aguarde um minuto e tente novamente.');
+            throw new Error(`Gemini respondeu ${r.status}. ${errBody.slice(0,180)}`);
+          }
+          const d = await r.json();
+          const text = d?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('') || '';
+          const blockReason = d?.promptFeedback?.blockReason;
+          if (blockReason) throw new Error(`O Gemini bloqueou esta resposta (motivo: ${blockReason}). Tente reformular ou usar outro artigo.`);
+          if (!text) { lastErr = new Error('A IA não devolveu resposta com este modelo.'); continue; }
+          return text;
+        } catch (err) {
+          lastErr = err;
+          if (!/404|não disponível/.test(err.message)) throw err; // erro definitivo, não vale tentar outro modelo
+        }
       }
-      const d = await r.json();
-      const text = d?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('') || '';
-      if (!text) throw new Error('A IA não devolveu resposta. Tente novamente.');
-      return text;
+      throw lastErr || new Error('Não foi possível obter resposta do Gemini.');
     }
+
     if (provider === 'deepseek') {
       const r = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -1141,7 +1316,10 @@ const SNAi = {
       });
       if (!r.ok) {
         const errBody = await r.text().catch(()=>'');
-        throw new Error(`DeepSeek respondeu ${r.status}. Verifique se a chave está correcta. ${errBody.slice(0,180)}`);
+        if (r.status === 402) throw new Error('A sua conta DeepSeek está sem saldo (mesmo o nível gratuito exige um saldo mínimo de 1-2 USD activado em platform.deepseek.com/usage). Recomendamos usar o Google Gemini em vez disso — tem um nível gratuito mais simples.');
+        if (r.status === 401) throw new Error('A chave da DeepSeek parece inválida. Confirme em platform.deepseek.com/api_keys.');
+        if (r.status === 429) throw new Error('Atingiu o limite de pedidos da DeepSeek por agora. Aguarde e tente novamente.');
+        throw new Error(`DeepSeek respondeu ${r.status}. ${errBody.slice(0,180)}`);
       }
       const d = await r.json();
       const text = d?.choices?.[0]?.message?.content || '';
@@ -1304,6 +1482,19 @@ document.addEventListener('DOMContentLoaded', () => SNUI.mountTopbar());
 <script>
 const user = SNAuth.requireAuth();
 if (user) {
+
+  // Sincroniza com a nuvem (se configurada) para reflectir alterações
+  // feitas pelo administrador noutro dispositivo (ex.: aprovação de
+  // pagamento). Se algo relevante mudou, recarrega a página uma vez.
+  (async () => {
+    if (!SNCloud.isReady()) return;
+    await SNAuth.syncUsersFromCloud();
+    const fresh = SNAuth.getCurrentUser();
+    if (fresh && (fresh.plan !== user.plan || fresh.planStatus !== user.planStatus)) {
+      SNUI.toast('O seu plano foi actualizado pelo administrador. A actualizar…', 'info');
+      setTimeout(() => location.reload(), 1200);
+    }
+  })();
 
   function switchTab(tab) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('on'));
