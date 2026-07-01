@@ -385,7 +385,7 @@ table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
     <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
     <div class="logo-text"><span class="logo-name">Scholar Nexus</span><span class="logo-sub">Agência Digital</span></div>
   </a>
-  <nav class="topbar-right"><span class="theme-toggle" id="themeToggleSlot" style="margin-right:8px"></span><span id="topbarAuthSlot" style="display:flex;align-items:center;gap:10px"></span></nav>
+  <nav class="topbar-right"><a class="nav-link" href="funcionalidades.html">Funcionalidades</a><a class="nav-link" href="como-usar.html">Como usar</a><a class="nav-link" href="pricing.html">Preços</a><span class="theme-toggle" id="themeToggleSlot" style="margin-left:8px"></span><span id="topbarAuthSlot" style="display:flex;align-items:center;gap:10px"></span></nav>
 </header>
 
 <div class="auth-wrap">
@@ -643,6 +643,12 @@ const SNAuth = {
     this._saveUsers(users);
     SNCloud.upsert('users', users[idx].id, users[idx]);
     this.addLog('recuperacao', `Palavra-passe recuperada via pergunta de segurança: ${user.email}`, user.id);
+    // Notificar todos os administradores
+    const admins = this._users().filter(u => u.role === 'admin');
+    admins.forEach(a => SNData.addNotification(a.id,
+      `Recuperação de palavra-passe: ${user.email}`,
+      `O utilizador ${user.name} (${user.email}) recuperou a palavra-passe com sucesso via pergunta de segurança.`
+    ));
     return true;
   },
 
@@ -795,9 +801,6 @@ const SNAuth = {
     return payment;
   },
 
-  // Disponível apenas em ambiente de demonstração/sandbox — simula a
-  // confirmação que, em produção, chegaria via webhook do gateway de
-  // pagamento (Stripe/PayPal) ou da API M-Pesa/e-Mola.
   simulateApproval(paymentId) {
     const payments = snRead(SN_KEYS.PAYMENTS, []);
     const idx = payments.findIndex(p => p.id === paymentId);
@@ -1072,15 +1075,21 @@ const SNScore = {
 // não exige isso.
 // ════════════════════════════════════════
 const SNCloud = {
+  // URL da base de dados Firebase incorporada directamente no código do site.
+  // Assim qualquer dispositivo que abra o site envia os dados automaticamente
+  // para a mesma base de dados, sem qualquer configuração adicional.
+  _DB_URL: 'https://scholar-nexus-7302f-default-rtdb.firebaseio.com',
   getConfig() {
-    return { dbUrl: (localStorage.getItem('sn_cloud_dburl') || '').replace(/\/+$/, '') };
+    // Prioridade: URL fixo no código. Se o administrador quiser substituir
+    // por outro projecto, pode actualizar 'sn_cloud_dburl' no localStorage,
+    // mas por defeito usa sempre o URL fixo.
+    const stored = (localStorage.getItem('sn_cloud_dburl') || '').replace(/\/+$/, '');
+    return { dbUrl: stored || this._DB_URL };
   },
   setConfig(dbUrl) {
     localStorage.setItem('sn_cloud_dburl', (dbUrl || '').trim().replace(/\/+$/, ''));
   },
-  isReady() {
-    return !!this.getConfig().dbUrl;
-  },
+  isReady() { return true; },
   async upsert(collection, id, obj) {
     if (!this.isReady()) return;
     try {
@@ -1127,100 +1136,149 @@ const SNCloud = {
   },
 };
 
+// ════════════════════════════════════════
+// SNAi — Inteligência Artificial GRATUITA (sem chave de API necessária)
+// ------------------------------------------------------------
+// Usa a API pública gratuita da Pollinations.ai (text.pollinations.ai)
+// que não requer registo, chave de API nem qualquer configuração.
+// O utilizador não precisa de fazer nada — funciona directamente.
+// Se o administrador tiver uma chave própria do Gemini ou DeepSeek
+// configurada em Definições, essa chave tem prioridade sobre a gratuita.
+// ════════════════════════════════════════
+// ════════════════════════════════════════
+// SNAi — IA gratuita integrada (Pollinations.ai, sem chave necessária)
+// O utilizador não configura nada — funciona automaticamente.
+// O administrador pode opcionalmente configurar uma chave Gemini
+// em Definições para usar um modelo mais avançado.
+// ════════════════════════════════════════
 const SNAi = {
   PROVIDERS: {
-    // Tenta vários nomes de modelo Gemini por ordem — a Google
-    // descontinua modelos antigos periodicamente, por isso usamos
-    // uma lista de fallback em vez de um único nome fixo.
-    gemini:   { label: 'Google Gemini',  models: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'] },
-    deepseek: { label: 'DeepSeek',       model: 'deepseek-chat' },
+    gemini:      { label: 'Google Gemini', models: ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'] },
+    deepseek:    { label: 'DeepSeek',      model: 'deepseek-chat' },
+    pollinations:{ label: 'IA Gratuita' },
   },
   getConfig() {
     return {
-      provider: localStorage.getItem('sn_ai_provider') || '',
-      key: localStorage.getItem('sn_ai_key') || '',
+      provider: localStorage.getItem('sn_ai_provider') || 'pollinations',
+      key:      localStorage.getItem('sn_ai_key') || '',
     };
   },
   setConfig(provider, key) {
-    localStorage.setItem('sn_ai_provider', provider || '');
+    localStorage.setItem('sn_ai_provider', provider || 'pollinations');
     localStorage.setItem('sn_ai_key', key || '');
   },
-  isReady() {
-    const c = this.getConfig();
-    return !!(c.provider && c.key && this.PROVIDERS[c.provider]);
+  isReady() { return true; },
+
+  // ── Pollinations chat API (POST /openai) — mais rápido e fiável ──
+  // Tem retry automático 3x com espera crescente para lidar com 429.
+  async _pollinations(messages, attempt=1) {
+    try {
+      const r = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'openai',
+          messages: messages,
+          seed: Math.floor(Math.random()*9999),
+        }),
+      });
+      if (r.status === 429) {
+        if (attempt >= 3) throw new Error('Serviço de IA ocupado. Aguarde 10 segundos e tente novamente.');
+        await new Promise(res => setTimeout(res, attempt * 3000));
+        return this._pollinations(messages, attempt + 1);
+      }
+      if (!r.ok) throw new Error(`IA respondeu ${r.status}. Tente novamente.`);
+      const d = await r.json();
+      const text = d?.choices?.[0]?.message?.content || d?.output || '';
+      if (!text || text.length < 5) throw new Error('Resposta vazia. Tente novamente.');
+      return text.trim();
+    } catch (err) {
+      if (err.name === 'TypeError' || err.message.includes('fetch')) {
+        throw new Error('Sem ligação ao serviço de IA. Verifique a internet e tente novamente.');
+      }
+      throw err;
+    }
   },
-  // Chamada genérica de "chat" — devolve texto puro da resposta da IA.
-  async ask(prompt) {
+
+  // ── Chamada principal ──
+  async ask(systemPrompt, userContent) {
     const { provider, key } = this.getConfig();
-    if (!provider || !key) throw new Error('Nenhuma chave de IA configurada. Vá a Definições → Inteligência Artificial.');
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userContent },
+    ];
+    if (!key || provider === 'pollinations') return this._pollinations(messages);
 
     if (provider === 'gemini') {
       const models = this.PROVIDERS.gemini.models;
-      let lastErr = null;
       for (const model of models) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
           const r = await fetch(url, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + '\n\n' + userContent }] }] }),
           });
-          if (!r.ok) {
-            const errBody = await r.text().catch(()=>'');
-            if (r.status === 404) { lastErr = new Error(`Modelo "${model}" não disponível na sua conta — a tentar o próximo modelo…`); continue; }
-            if (r.status === 400) throw new Error('A chave do Gemini parece inválida ou mal colada. Confirme em aistudio.google.com/apikey.');
-            if (r.status === 429) throw new Error('Atingiu o limite gratuito de pedidos do Gemini por agora. Aguarde um minuto e tente novamente.');
-            throw new Error(`Gemini respondeu ${r.status}. ${errBody.slice(0,180)}`);
-          }
+          if (r.status === 429) return this._pollinations(messages);
+          if (!r.ok) { if (r.status === 404) continue; return this._pollinations(messages); }
           const d = await r.json();
           const text = d?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('') || '';
-          const blockReason = d?.promptFeedback?.blockReason;
-          if (blockReason) throw new Error(`O Gemini bloqueou esta resposta (motivo: ${blockReason}). Tente reformular ou usar outro artigo.`);
-          if (!text) { lastErr = new Error('A IA não devolveu resposta com este modelo.'); continue; }
-          return text;
-        } catch (err) {
-          lastErr = err;
-          if (!/404|não disponível/.test(err.message)) throw err; // erro definitivo, não vale tentar outro modelo
-        }
+          if (text) return text.trim();
+        } catch (e) { return this._pollinations(messages); }
       }
-      throw lastErr || new Error('Não foi possível obter resposta do Gemini.');
+      return this._pollinations(messages);
     }
 
     if (provider === 'deepseek') {
-      const r = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model: this.PROVIDERS.deepseek.model, messages: [{ role: 'user', content: prompt }] }),
-      });
-      if (!r.ok) {
-        const errBody = await r.text().catch(()=>'');
-        if (r.status === 402) throw new Error('A sua conta DeepSeek está sem saldo (mesmo o nível gratuito exige um saldo mínimo de 1-2 USD activado em platform.deepseek.com/usage). Recomendamos usar o Google Gemini em vez disso — tem um nível gratuito mais simples.');
-        if (r.status === 401) throw new Error('A chave da DeepSeek parece inválida. Confirme em platform.deepseek.com/api_keys.');
-        if (r.status === 429) throw new Error('Atingiu o limite de pedidos da DeepSeek por agora. Aguarde e tente novamente.');
-        throw new Error(`DeepSeek respondeu ${r.status}. ${errBody.slice(0,180)}`);
-      }
-      const d = await r.json();
-      const text = d?.choices?.[0]?.message?.content || '';
-      if (!text) throw new Error('A IA não devolveu resposta. Tente novamente.');
-      return text;
+      try {
+        const r = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          body: JSON.stringify({ model: 'deepseek-chat', messages }),
+        });
+        if (!r.ok) return this._pollinations(messages);
+        const d = await r.json();
+        return d?.choices?.[0]?.message?.content?.trim() || '';
+      } catch (e) { return this._pollinations(messages); }
     }
-    throw new Error('Fornecedor de IA desconhecido.');
+    return this._pollinations(messages);
   },
-  // Acções específicas, em português de Moçambique, pré-acordo ortográfico.
+
+  // ── Sistema de prompts ──
+  // IMPORTANTE: Usa o que está disponível (título + resumo + TLDR).
+  // NÃO pede texto adicional — trabalha só com os metadados do artigo.
+  _system() {
+    return 'És um assistente académico que responde SEMPRE em português de Moçambique (pré-Acordo Ortográfico de 1990). Responde de forma directa, sem pedir mais informação. Usa apenas o conteúdo fornecido pelo utilizador.';
+  },
+  _paperContent(paper) {
+    const parts = [];
+    if (paper.title)    parts.push(`TÍTULO: ${paper.title}`);
+    if (paper.authors)  parts.push(`AUTORES: ${paper.authors}`);
+    if (paper.year)     parts.push(`ANO: ${paper.year}`);
+    if (paper.source)   parts.push(`FONTE: ${paper.source}`);
+    if (paper.tldr)     parts.push(`RESUMO IA (TLDR): ${paper.tldr}`);
+    if (paper.abstract) parts.push(`RESUMO/ABSTRACT: ${paper.abstract.slice(0, 1000)}`);
+    if (!paper.abstract && !paper.tldr) parts.push('(Resumo não disponível neste artigo — responde com base no título e autores)');
+    return parts.join('\n');
+  },
   summarize(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Resume em português de Moçambique (pré-Acordo Ortográfico de 1990), em no máximo 6 frases curtas, o seguinte artigo científico. Sê objectivo e claro, sem inventar dados que não estejam no texto.\n\nTítulo: ${paper.title}\n\nResumo original: ${base}`);
+    return this.ask(this._system(),
+      `Resume em 5 a 7 frases curtas e claras este artigo/manual científico. Usa APENAS as informações abaixo. NÃO peças mais dados.\n\n${this._paperContent(paper)}`
+    );
   },
   explain(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Explica de forma simples, como se fosse para um estudante universitário em Moçambique, o que este artigo científico demonstra, qual é a importância prática dos resultados, e quais são as principais limitações do estudo. Usa português de Moçambique pré-Acordo Ortográfico.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+    return this.ask(this._system(),
+      `Explica de forma simples (para um estudante universitário moçambicano) o que este trabalho demonstra, a sua importância prática e as suas limitações. Usa APENAS as informações abaixo.\n\n${this._paperContent(paper)}`
+    );
   },
   generateQuestions(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Com base neste artigo científico, gera 5 perguntas de estudo (estilo exame universitário) que testem a compreensão do conteúdo, em português de Moçambique pré-Acordo Ortográfico. Numera as perguntas.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+    return this.ask(this._system(),
+      `Gera 5 perguntas de estudo numeradas (estilo exame) com base APENAS nas informações abaixo. NÃO peças mais dados.\n\n${this._paperContent(paper)}`
+    );
   },
   conceptMap(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Com base neste artigo científico, cria um mapa conceptual em formato de lista hierárquica (com indentação por hífens), mostrando o conceito central e os 4-6 conceitos relacionados mais importantes, em português de Moçambique pré-Acordo Ortográfico.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+    return this.ask(this._system(),
+      `Cria um mapa conceptual em formato de diagrama de texto usando setas (→) e indentação, com o conceito central no topo ligado por setas aos 5-6 conceitos secundários principais. Usa APENAS as informações abaixo.\n\nFormato esperado:\nConceito Central\n  → Conceito A\n    → Sub-conceito A1\n  → Conceito B\n  → Conceito C\n\n${this._paperContent(paper)}`
+    );
   },
 };
 

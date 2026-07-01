@@ -171,10 +171,23 @@ body::before {
   display: flex; gap: 4px; padding: 4px;
   background: var(--surface); border-radius: var(--radius);
   border: 1px solid var(--border);
-  margin-bottom: 16px; overflow-x: auto;
-  scrollbar-width: none;
+  margin-bottom: 16px;
+  overflow: hidden; /* esconde o overflow para o efeito de ticker */
+  position: relative;
+  white-space: nowrap;
 }
 .tabs-bar::-webkit-scrollbar { display: none; }
+/* Faixas de gradiente nas bordas para sugerir que há mais conteúdo */
+.tabs-bar::before, .tabs-bar::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 32px; z-index: 2; pointer-events: none;
+}
+.tabs-bar::before { left: 0; background: linear-gradient(to right, var(--surface), transparent); }
+.tabs-bar::after  { right: 0; background: linear-gradient(to left, var(--surface), transparent); }
+/* Faixa interna que anima da direita para a esquerda em loop */
+.tabs-inner {
+  display: inline-flex; gap: 4px;
+  flex-shrink: 0;
+}
 .tab-btn {
   padding: 7px 16px; border-radius: 7px; border: none;
   font-size: 13px; font-weight: 500; cursor: pointer;
@@ -411,18 +424,9 @@ body::before {
 /* ══════════════════════════════════════
    TRIAL BANNER
 ══════════════════════════════════════ */
-.trial-banner {
-  background: linear-gradient(135deg, var(--blue-dark), var(--blue));
-  border-bottom: 1px solid var(--blue-dark);
-  padding: 10px 24px; text-align: center;
-  font-size: 13px; color: rgba(255,255,255,0.9);
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-}
-.trial-banner strong { color: #fff; }
-.trial-banner .close-btn {
-  margin-left: auto; background: none; border: none; color: rgba(255,255,255,0.6);
-  cursor: pointer; font-size: 16px; padding: 0 4px; line-height: 1;
-}
+
+
+
 
 /* ══════════════════════════════════════
    MODAL — Export
@@ -851,13 +855,6 @@ table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
 </head>
 <body>
 
-<!-- TRIAL BANNER -->
-<div class="trial-banner" id="trialBanner">
-  <i class="fa-solid fa-clock" style="font-size:13px"></i>
-  <span>Acesso de demonstração activo — <strong>30 dias grátis</strong>. Pagamento será solicitado após o período de teste.</span>
-  <button class="close-btn" onclick="document.getElementById('trialBanner').style.display='none'" aria-label="Fechar">×</button>
-</div>
-
 <!-- TOPBAR -->
 <header class="topbar">
   <a href="#" class="logo-wrap" aria-label="Scholar Nexus — Página inicial">
@@ -872,7 +869,8 @@ table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
     </div>
   </a>
   <nav class="topbar-right">
-    <a href="#" class="nav-link">Funcionalidades</a>
+    <a href="funcionalidades.html" class="nav-link">Funcionalidades</a>
+    <a href="como-usar.html" class="nav-link">Como usar</a>
     <a href="pricing.html" class="nav-link">Preços</a>
     <a href="#footer" class="nav-link">Contacto</a>
     <span class="theme-toggle" id="themeToggleSlot" style="margin-right:8px"></span>
@@ -894,37 +892,99 @@ table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
     Aceda a publicações académicas de todo o mundo numa única plataforma. Resultados em segundos, com acesso aberto e links de descarga directos.
   </p>
 
-  <div class="search-hero" role="search">
-    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-    <input type="text" id="mainQuery"
-      placeholder="Pesquise por tema, autor, título ou DOI..."
-      aria-label="Campo de pesquisa científica"
-      autocomplete="off" autocorrect="off" spellcheck="false" />
-    <button class="btn-go" id="btnSearch" onclick="doSearch()" aria-label="Iniciar pesquisa">
-      <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-      Pesquisar
-    </button>
+  <div style="max-width:680px;margin:0 auto">
+    <!-- Campo principal: descrição do que procura (obrigatório) -->
+    <div id="descWrap" style="background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-lg);padding:8px 12px 8px 18px;display:flex;align-items:flex-start;gap:10px;transition:border-color .2s,box-shadow .2s;margin-bottom:8px">
+      <i class="fa-solid fa-magnifying-glass" style="color:var(--blue-light);font-size:15px;flex-shrink:0;margin-top:11px" aria-hidden="true"></i>
+      <textarea id="descQuery" rows="2"
+        placeholder="Descreva o que procura — ex.: quero um manual sobre produção de farinha de amêndoa de caju em Moçambique"
+        aria-label="Descreva o que procura"
+        autocomplete="off"
+        style="flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:var(--font);padding:8px 0;resize:none;line-height:1.5"></textarea>
+      <button class="btn-go" id="btnSearch" onclick="doSearch()" aria-label="Iniciar pesquisa" style="align-self:flex-end;margin-bottom:2px">
+        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        Pesquisar
+      </button>
+    </div>
+    <!-- Campo secundário: título/autor/DOI exacto (opcional) -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:4px 12px 4px 18px;display:flex;align-items:center;gap:8px">
+      <i class="fa-solid fa-tag" style="color:var(--text3);font-size:12px;flex-shrink:0" aria-hidden="true"></i>
+      <input type="text" id="mainQuery"
+        placeholder="Título exacto, nome do autor ou DOI (opcional — deixe em branco se usou a descrição acima)"
+        aria-label="Título exacto, autor ou DOI"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        style="flex:1;background:none;border:none;outline:none;font-size:12.5px;color:var(--text2);font-family:var(--font);padding:9px 0"/>
+    </div>
+    <p style="font-size:11.5px;color:var(--text3);margin-top:8px;text-align:center">
+      <i class="fa-solid fa-circle-info" style="margin-right:4px"></i>
+      Pesquise artigos, manuais, teses, livros escolares e exercícios em 9 bases simultâneas · 24 áreas do conhecimento
+    </p>
   </div>
 
   <div class="hero-stats" aria-label="Estatísticas da plataforma">
     <div class="hero-stat"><div class="n">200M+</div><div class="l">Artigos indexados</div></div>
-    <div class="hero-stat"><div class="n">8</div><div class="l">Bases científicas</div></div>
-    <div class="hero-stat"><div class="n">100%</div><div class="l">Acesso gratuito</div></div>
+    <div class="hero-stat"><div class="n">9</div><div class="l">Bases científicas</div></div>
+    <div class="hero-stat"><div class="n">24</div><div class="l">Áreas do conhecimento</div></div>
     <div class="hero-stat"><div class="n">PDF</div><div class="l">Descarga directa</div></div>
   </div>
 </section>
 
 <!-- CONTROLS -->
 <div class="controls-wrap" id="controlsWrap" style="display:none" role="region" aria-label="Filtros de pesquisa">
-  <div class="tabs-bar" role="tablist" aria-label="Área do conhecimento">
+  <div class="tabs-bar" role="tablist" aria-label="Área do conhecimento" id="tabsBar">
+    <div class="tabs-inner" id="tabsInner">
     <button class="tab-btn on" role="tab" aria-selected="true" onclick="setTab(this,'all')">Todas as áreas</button>
     <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'med')">Medicina &amp; Saúde</button>
     <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'bio')">Biociências</button>
     <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'eng')">Engenharia</button>
     <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'soc')">Ciências Sociais</button>
-    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'fis')">Física &amp; Exatas</button>
-    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'food')">Alimentação</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'fis')">Física &amp; Exactas</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'food')">Alimentação &amp; Nutrição</button>
     <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'tech')">Computação &amp; IA</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'dir')">Direito &amp; Ciências Jurídicas</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'ped')">Pedagogia &amp; Educação</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'eco')">Economia &amp; Gestão</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'agr')">Agronomia &amp; Veterinária</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'amb')">Ambiente &amp; Sustentabilidade</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'psi')">Psicologia &amp; Comportamento</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'hist')">História &amp; Geografia</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'lit')">Letras &amp; Literatura</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'arq')">Arquitectura &amp; Urbanismo</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'farm')">Farmácia &amp; Biomedicina</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'mat')">Matemática &amp; Estatística</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'rel')">Relações Internacionais</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'com')">Comunicação &amp; Jornalismo</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'fil')">Filosofia &amp; Ética</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'art')">Artes &amp; Design</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="setTab(this,'geo')">Geologia &amp; Mineração</button>
+    </div>
+    <!-- Duplicado para criar loop contínuo sem salto -->
+    <div class="tabs-inner" aria-hidden="true">
+    <button class="tab-btn" onclick="setTab(null,'all')">Todas as áreas</button>
+    <button class="tab-btn" onclick="setTab(null,'med')">Medicina &amp; Saúde</button>
+    <button class="tab-btn" onclick="setTab(null,'bio')">Biociências</button>
+    <button class="tab-btn" onclick="setTab(null,'eng')">Engenharia</button>
+    <button class="tab-btn" onclick="setTab(null,'soc')">Ciências Sociais</button>
+    <button class="tab-btn" onclick="setTab(null,'fis')">Física &amp; Exactas</button>
+    <button class="tab-btn" onclick="setTab(null,'food')">Alimentação &amp; Nutrição</button>
+    <button class="tab-btn" onclick="setTab(null,'tech')">Computação &amp; IA</button>
+    <button class="tab-btn" onclick="setTab(null,'dir')">Direito &amp; Ciências Jurídicas</button>
+    <button class="tab-btn" onclick="setTab(null,'ped')">Pedagogia &amp; Educação</button>
+    <button class="tab-btn" onclick="setTab(null,'eco')">Economia &amp; Gestão</button>
+    <button class="tab-btn" onclick="setTab(null,'agr')">Agronomia &amp; Veterinária</button>
+    <button class="tab-btn" onclick="setTab(null,'amb')">Ambiente &amp; Sustentabilidade</button>
+    <button class="tab-btn" onclick="setTab(null,'psi')">Psicologia &amp; Comportamento</button>
+    <button class="tab-btn" onclick="setTab(null,'hist')">História &amp; Geografia</button>
+    <button class="tab-btn" onclick="setTab(null,'lit')">Letras &amp; Literatura</button>
+    <button class="tab-btn" onclick="setTab(null,'arq')">Arquitectura &amp; Urbanismo</button>
+    <button class="tab-btn" onclick="setTab(null,'farm')">Farmácia &amp; Biomedicina</button>
+    <button class="tab-btn" onclick="setTab(null,'mat')">Matemática &amp; Estatística</button>
+    <button class="tab-btn" onclick="setTab(null,'rel')">Relações Internacionais</button>
+    <button class="tab-btn" onclick="setTab(null,'com')">Comunicação &amp; Jornalismo</button>
+    <button class="tab-btn" onclick="setTab(null,'fil')">Filosofia &amp; Ética</button>
+    <button class="tab-btn" onclick="setTab(null,'art')">Artes &amp; Design</button>
+    <button class="tab-btn" onclick="setTab(null,'geo')">Geologia &amp; Mineração</button>
+    </div>
   </div>
   <div class="filters-row">
     <select class="filter-select" id="filterYear" aria-label="Filtrar por período">
@@ -1113,6 +1173,44 @@ table.data-table tr:hover td { background: rgba(255,255,255,0.015); }
 </div>
 
 <!-- FOOTER -->
+<!-- SECÇÃO DE FEEDBACK, AVALIAÇÃO E COMENTÁRIOS -->
+<section id="feedback-section" style="position:relative;z-index:1;max-width:720px;margin:0 auto;padding:0 16px 48px">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">A SUA OPINIÃO</div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:6px">Ajude-nos a melhorar o Scholar Nexus</h2>
+    <p style="font-size:13.5px;color:var(--text3)">A sua avaliação e comentários são lidos pelo administrador e usados para melhorar a plataforma.</p>
+  </div>
+
+  <!-- AVALIAÇÃO POR ESTRELAS -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:14px">
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:14px">Como avalia o Scholar Nexus?</h3>
+    <div id="starRating" style="display:flex;gap:6px;margin-bottom:16px">
+      <button class="star-btn" data-v="1" onclick="setRating(1)" style="background:none;border:none;font-size:28px;cursor:pointer;color:var(--text3);transition:color .15s;padding:4px">★</button>
+      <button class="star-btn" data-v="2" onclick="setRating(2)" style="background:none;border:none;font-size:28px;cursor:pointer;color:var(--text3);transition:color .15s;padding:4px">★</button>
+      <button class="star-btn" data-v="3" onclick="setRating(3)" style="background:none;border:none;font-size:28px;cursor:pointer;color:var(--text3);transition:color .15s;padding:4px">★</button>
+      <button class="star-btn" data-v="4" onclick="setRating(4)" style="background:none;border:none;font-size:28px;cursor:pointer;color:var(--text3);transition:color .15s;padding:4px">★</button>
+      <button class="star-btn" data-v="5" onclick="setRating(5)" style="background:none;border:none;font-size:28px;cursor:pointer;color:var(--text3);transition:color .15s;padding:4px">★</button>
+      <span id="ratingLabel" style="font-size:13px;color:var(--text3);margin-left:8px;line-height:40px"></span>
+    </div>
+    <div id="fbAlert"></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input type="text" id="fbName" placeholder="O seu nome (opcional)" style="height:42px;padding:0 14px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13.5px;font-family:var(--font);outline:none" />
+      <textarea id="fbComment" placeholder="Escreva o seu comentário, sugestão ou reclamação..." style="min-height:90px;padding:10px 14px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13.5px;font-family:var(--font);resize:vertical;outline:none"></textarea>
+      <button onclick="submitFeedback()" style="align-self:flex-start;height:42px;padding:0 20px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-size:13.5px;font-weight:600;font-family:var(--font);cursor:pointer">
+        <i class="fa-solid fa-paper-plane" style="margin-right:7px"></i>Enviar avaliação
+      </button>
+    </div>
+  </div>
+
+  <!-- LISTA DE COMENTÁRIOS PÚBLICOS -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px">
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:16px">O que dizem os utilizadores</h3>
+    <div id="fbList">
+      <p style="font-size:13px;color:var(--text3)">A carregar comentários…</p>
+    </div>
+  </div>
+</section>
+
 <footer class="footer" id="footer">
   <div class="footer-logo" aria-label="Scholar Nexus — Agência Digital">
 
@@ -1320,6 +1418,12 @@ const SNAuth = {
     this._saveUsers(users);
     SNCloud.upsert('users', users[idx].id, users[idx]);
     this.addLog('recuperacao', `Palavra-passe recuperada via pergunta de segurança: ${user.email}`, user.id);
+    // Notificar todos os administradores
+    const admins = this._users().filter(u => u.role === 'admin');
+    admins.forEach(a => SNData.addNotification(a.id,
+      `Recuperação de palavra-passe: ${user.email}`,
+      `O utilizador ${user.name} (${user.email}) recuperou a palavra-passe com sucesso via pergunta de segurança.`
+    ));
     return true;
   },
 
@@ -1747,15 +1851,21 @@ const SNScore = {
 // não exige isso.
 // ════════════════════════════════════════
 const SNCloud = {
+  // URL da base de dados Firebase incorporada directamente no código do site.
+  // Assim qualquer dispositivo que abra o site envia os dados automaticamente
+  // para a mesma base de dados, sem qualquer configuração adicional.
+  _DB_URL: 'https://scholar-nexus-7302f-default-rtdb.firebaseio.com',
   getConfig() {
-    return { dbUrl: (localStorage.getItem('sn_cloud_dburl') || '').replace(/\/+$/, '') };
+    // Prioridade: URL fixo no código. Se o administrador quiser substituir
+    // por outro projecto, pode actualizar 'sn_cloud_dburl' no localStorage,
+    // mas por defeito usa sempre o URL fixo.
+    const stored = (localStorage.getItem('sn_cloud_dburl') || '').replace(/\/+$/, '');
+    return { dbUrl: stored || this._DB_URL };
   },
   setConfig(dbUrl) {
     localStorage.setItem('sn_cloud_dburl', (dbUrl || '').trim().replace(/\/+$/, ''));
   },
-  isReady() {
-    return !!this.getConfig().dbUrl;
-  },
+  isReady() { return true; },
   async upsert(collection, id, obj) {
     if (!this.isReady()) return;
     try {
@@ -1802,100 +1912,149 @@ const SNCloud = {
   },
 };
 
+// ════════════════════════════════════════
+// SNAi — Inteligência Artificial GRATUITA (sem chave de API necessária)
+// ------------------------------------------------------------
+// Usa a API pública gratuita da Pollinations.ai (text.pollinations.ai)
+// que não requer registo, chave de API nem qualquer configuração.
+// O utilizador não precisa de fazer nada — funciona directamente.
+// Se o administrador tiver uma chave própria do Gemini ou DeepSeek
+// configurada em Definições, essa chave tem prioridade sobre a gratuita.
+// ════════════════════════════════════════
+// ════════════════════════════════════════
+// SNAi — IA gratuita integrada (Pollinations.ai, sem chave necessária)
+// O utilizador não configura nada — funciona automaticamente.
+// O administrador pode opcionalmente configurar uma chave Gemini
+// em Definições para usar um modelo mais avançado.
+// ════════════════════════════════════════
 const SNAi = {
   PROVIDERS: {
-    // Tenta vários nomes de modelo Gemini por ordem — a Google
-    // descontinua modelos antigos periodicamente, por isso usamos
-    // uma lista de fallback em vez de um único nome fixo.
-    gemini:   { label: 'Google Gemini',  models: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'] },
-    deepseek: { label: 'DeepSeek',       model: 'deepseek-chat' },
+    gemini:      { label: 'Google Gemini', models: ['gemini-2.5-flash','gemini-2.0-flash','gemini-1.5-flash'] },
+    deepseek:    { label: 'DeepSeek',      model: 'deepseek-chat' },
+    pollinations:{ label: 'IA Gratuita' },
   },
   getConfig() {
     return {
-      provider: localStorage.getItem('sn_ai_provider') || '',
-      key: localStorage.getItem('sn_ai_key') || '',
+      provider: localStorage.getItem('sn_ai_provider') || 'pollinations',
+      key:      localStorage.getItem('sn_ai_key') || '',
     };
   },
   setConfig(provider, key) {
-    localStorage.setItem('sn_ai_provider', provider || '');
+    localStorage.setItem('sn_ai_provider', provider || 'pollinations');
     localStorage.setItem('sn_ai_key', key || '');
   },
-  isReady() {
-    const c = this.getConfig();
-    return !!(c.provider && c.key && this.PROVIDERS[c.provider]);
+  isReady() { return true; },
+
+  // ── Pollinations chat API (POST /openai) — mais rápido e fiável ──
+  // Tem retry automático 3x com espera crescente para lidar com 429.
+  async _pollinations(messages, attempt=1) {
+    try {
+      const r = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'openai',
+          messages: messages,
+          seed: Math.floor(Math.random()*9999),
+        }),
+      });
+      if (r.status === 429) {
+        if (attempt >= 3) throw new Error('Serviço de IA ocupado. Aguarde 10 segundos e tente novamente.');
+        await new Promise(res => setTimeout(res, attempt * 3000));
+        return this._pollinations(messages, attempt + 1);
+      }
+      if (!r.ok) throw new Error(`IA respondeu ${r.status}. Tente novamente.`);
+      const d = await r.json();
+      const text = d?.choices?.[0]?.message?.content || d?.output || '';
+      if (!text || text.length < 5) throw new Error('Resposta vazia. Tente novamente.');
+      return text.trim();
+    } catch (err) {
+      if (err.name === 'TypeError' || err.message.includes('fetch')) {
+        throw new Error('Sem ligação ao serviço de IA. Verifique a internet e tente novamente.');
+      }
+      throw err;
+    }
   },
-  // Chamada genérica de "chat" — devolve texto puro da resposta da IA.
-  async ask(prompt) {
+
+  // ── Chamada principal ──
+  async ask(systemPrompt, userContent) {
     const { provider, key } = this.getConfig();
-    if (!provider || !key) throw new Error('Nenhuma chave de IA configurada. Vá a Definições → Inteligência Artificial.');
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userContent },
+    ];
+    if (!key || provider === 'pollinations') return this._pollinations(messages);
 
     if (provider === 'gemini') {
       const models = this.PROVIDERS.gemini.models;
-      let lastErr = null;
       for (const model of models) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
           const r = await fetch(url, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + '\n\n' + userContent }] }] }),
           });
-          if (!r.ok) {
-            const errBody = await r.text().catch(()=>'');
-            if (r.status === 404) { lastErr = new Error(`Modelo "${model}" não disponível na sua conta — a tentar o próximo modelo…`); continue; }
-            if (r.status === 400) throw new Error('A chave do Gemini parece inválida ou mal colada. Confirme em aistudio.google.com/apikey.');
-            if (r.status === 429) throw new Error('Atingiu o limite gratuito de pedidos do Gemini por agora. Aguarde um minuto e tente novamente.');
-            throw new Error(`Gemini respondeu ${r.status}. ${errBody.slice(0,180)}`);
-          }
+          if (r.status === 429) return this._pollinations(messages);
+          if (!r.ok) { if (r.status === 404) continue; return this._pollinations(messages); }
           const d = await r.json();
           const text = d?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('') || '';
-          const blockReason = d?.promptFeedback?.blockReason;
-          if (blockReason) throw new Error(`O Gemini bloqueou esta resposta (motivo: ${blockReason}). Tente reformular ou usar outro artigo.`);
-          if (!text) { lastErr = new Error('A IA não devolveu resposta com este modelo.'); continue; }
-          return text;
-        } catch (err) {
-          lastErr = err;
-          if (!/404|não disponível/.test(err.message)) throw err; // erro definitivo, não vale tentar outro modelo
-        }
+          if (text) return text.trim();
+        } catch (e) { return this._pollinations(messages); }
       }
-      throw lastErr || new Error('Não foi possível obter resposta do Gemini.');
+      return this._pollinations(messages);
     }
 
     if (provider === 'deepseek') {
-      const r = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model: this.PROVIDERS.deepseek.model, messages: [{ role: 'user', content: prompt }] }),
-      });
-      if (!r.ok) {
-        const errBody = await r.text().catch(()=>'');
-        if (r.status === 402) throw new Error('A sua conta DeepSeek está sem saldo (mesmo o nível gratuito exige um saldo mínimo de 1-2 USD activado em platform.deepseek.com/usage). Recomendamos usar o Google Gemini em vez disso — tem um nível gratuito mais simples.');
-        if (r.status === 401) throw new Error('A chave da DeepSeek parece inválida. Confirme em platform.deepseek.com/api_keys.');
-        if (r.status === 429) throw new Error('Atingiu o limite de pedidos da DeepSeek por agora. Aguarde e tente novamente.');
-        throw new Error(`DeepSeek respondeu ${r.status}. ${errBody.slice(0,180)}`);
-      }
-      const d = await r.json();
-      const text = d?.choices?.[0]?.message?.content || '';
-      if (!text) throw new Error('A IA não devolveu resposta. Tente novamente.');
-      return text;
+      try {
+        const r = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          body: JSON.stringify({ model: 'deepseek-chat', messages }),
+        });
+        if (!r.ok) return this._pollinations(messages);
+        const d = await r.json();
+        return d?.choices?.[0]?.message?.content?.trim() || '';
+      } catch (e) { return this._pollinations(messages); }
     }
-    throw new Error('Fornecedor de IA desconhecido.');
+    return this._pollinations(messages);
   },
-  // Acções específicas, em português de Moçambique, pré-acordo ortográfico.
+
+  // ── Sistema de prompts ──
+  // IMPORTANTE: Usa o que está disponível (título + resumo + TLDR).
+  // NÃO pede texto adicional — trabalha só com os metadados do artigo.
+  _system() {
+    return 'És um assistente académico que responde SEMPRE em português de Moçambique (pré-Acordo Ortográfico de 1990). Responde de forma directa, sem pedir mais informação. Usa apenas o conteúdo fornecido pelo utilizador.';
+  },
+  _paperContent(paper) {
+    const parts = [];
+    if (paper.title)    parts.push(`TÍTULO: ${paper.title}`);
+    if (paper.authors)  parts.push(`AUTORES: ${paper.authors}`);
+    if (paper.year)     parts.push(`ANO: ${paper.year}`);
+    if (paper.source)   parts.push(`FONTE: ${paper.source}`);
+    if (paper.tldr)     parts.push(`RESUMO IA (TLDR): ${paper.tldr}`);
+    if (paper.abstract) parts.push(`RESUMO/ABSTRACT: ${paper.abstract.slice(0, 1000)}`);
+    if (!paper.abstract && !paper.tldr) parts.push('(Resumo não disponível neste artigo — responde com base no título e autores)');
+    return parts.join('\n');
+  },
   summarize(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Resume em português de Moçambique (pré-Acordo Ortográfico de 1990), em no máximo 6 frases curtas, o seguinte artigo científico. Sê objectivo e claro, sem inventar dados que não estejam no texto.\n\nTítulo: ${paper.title}\n\nResumo original: ${base}`);
+    return this.ask(this._system(),
+      `Resume em 5 a 7 frases curtas e claras este artigo/manual científico. Usa APENAS as informações abaixo. NÃO peças mais dados.\n\n${this._paperContent(paper)}`
+    );
   },
   explain(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Explica de forma simples, como se fosse para um estudante universitário em Moçambique, o que este artigo científico demonstra, qual é a importância prática dos resultados, e quais são as principais limitações do estudo. Usa português de Moçambique pré-Acordo Ortográfico.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+    return this.ask(this._system(),
+      `Explica de forma simples (para um estudante universitário moçambicano) o que este trabalho demonstra, a sua importância prática e as suas limitações. Usa APENAS as informações abaixo.\n\n${this._paperContent(paper)}`
+    );
   },
   generateQuestions(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Com base neste artigo científico, gera 5 perguntas de estudo (estilo exame universitário) que testem a compreensão do conteúdo, em português de Moçambique pré-Acordo Ortográfico. Numera as perguntas.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+    return this.ask(this._system(),
+      `Gera 5 perguntas de estudo numeradas (estilo exame) com base APENAS nas informações abaixo. NÃO peças mais dados.\n\n${this._paperContent(paper)}`
+    );
   },
   conceptMap(paper) {
-    const base = paper.abstract || paper.title || '';
-    return this.ask(`Com base neste artigo científico, cria um mapa conceptual em formato de lista hierárquica (com indentação por hífens), mostrando o conceito central e os 4-6 conceitos relacionados mais importantes, em português de Moçambique pré-Acordo Ortográfico.\n\nTítulo: ${paper.title}\n\nResumo: ${base}`);
+    return this.ask(this._system(),
+      `Cria um mapa conceptual em formato de diagrama de texto usando setas (→) e indentação, com o conceito central no topo ligado por setas aos 5-6 conceitos secundários principais. Usa APENAS as informações abaixo.\n\nFormato esperado:\nConceito Central\n  → Conceito A\n    → Sub-conceito A1\n  → Conceito B\n  → Conceito C\n\n${this._paperContent(paper)}`
+    );
   },
 };
 
@@ -2061,7 +2220,6 @@ function siteConfig() {
 }
 (function applySiteConfig() {
   const cfg = siteConfig();
-  if (!cfg.trialBanner) document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('trialBanner'); if (b) b.style.display = 'none'; });
 })();
 
 // ── STATE ──
@@ -2717,9 +2875,59 @@ function checkSearchAllowed() {
 // ════════════════════════════════════════
 // SEARCH ENGINE
 // ════════════════════════════════════════
+// Palavras de paragem em Português — não usadas na query
+const PT_STOPWORDS = new Set(['de','da','do','das','dos','e','o','a','os','as',
+  'um','uma','que','em','para','com','por','se','é','ao','à','no','na','nos','nas',
+  'como','onde','quando','quero','preciso','busco','procuro','estou','precisa',
+  'sobre','acerca','qual','quais','seu','sua','seus','suas','este','esta','estes',
+  'estas','aquele','aquela','isto','isso','aquilo','mais','muito','bem','já','ainda',
+  'só','mas','ou','pois','porque','então','também','após','antes','durante','entre',
+  'até','desde','pelo','pela','pelos','pelas','num','numa','ter','ser','estar',
+  'fazer','poder','dever','obter','conseguir','encontrar','achar','ver','usar']);
+
+// Extrai palavras-chave relevantes de um texto em português
+function extractKeywords(text, maxWords=8) {
+  return text.toLowerCase()
+    .replace(/[^a-záéíóúâêôãõüàèìòùç\s-]/gi,' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !PT_STOPWORDS.has(w))
+    .slice(0, maxWords);
+}
+
+// Calcula overlap entre query e texto do artigo (0-1)
+function relevanceScore(paper, keywords) {
+  if (!keywords.length) return 1;
+  const haystack = [paper.title, paper.abstract, paper.tldr]
+    .filter(Boolean).join(' ').toLowerCase();
+  const matches = keywords.filter(kw => haystack.includes(kw));
+  return matches.length / keywords.length;
+}
+
 async function doSearch() {
-  const q = document.getElementById('mainQuery').value.trim();
-  if (!q || ST.loading) return;
+  const qTitle = (document.getElementById('mainQuery')?.value || '').trim();
+  const qDesc  = (document.getElementById('descQuery')?.value || '').trim();
+
+  if (!qTitle && !qDesc) {
+    const mainQ = document.getElementById('mainQuery');
+    if (mainQ) { mainQ.focus(); mainQ.style.border='1.5px solid var(--red-light)'; setTimeout(()=>mainQ.style.border='',1500); }
+    return;
+  }
+  if (ST.loading) return;
+
+  // Constrói a query de pesquisa:
+  // 1. Se há título → usa como âncora principal
+  // 2. Adiciona palavras-chave extraídas da descrição
+  // 3. Se só descrição → usa as palavras-chave dela como query
+  const descKws = qDesc ? extractKeywords(qDesc, 6) : [];
+  const q = qTitle
+    ? (descKws.length ? qTitle + ' ' + descKws.join(' ') : qTitle)
+    : descKws.join(' ');
+  
+  // Keywords para filtro de relevância — combinação de título e descrição
+  const allKws = [
+    ...extractKeywords(qTitle, 5),
+    ...descKws,
+  ].filter((v,i,a)=>a.indexOf(v)===i); // dedup
   if (!checkSearchAllowed()) return;
 
   ST.query = q;
@@ -2772,6 +2980,16 @@ async function doSearch() {
   papers = Core.filterYear(papers, CFG.yearFilter());
   papers = Core.filterOA(papers, CFG.onlyOA());
   papers = Core.rank(papers, q);
+  // Filtro de relevância — remove artigos sem sobreposição alguma com os
+  // termos da query. Mantém sempre pelo menos 5 resultados para não ficar
+  // completamente vazio quando os metadados são escassos.
+  if (allKws.length >= 2) {
+    const scored = papers.map(p => ({ p, s: relevanceScore(p, allKws) }));
+    const filtered = scored.filter(x => x.s > 0).map(x => x.p);
+    if (filtered.length >= 3) papers = filtered;
+    // Ordenar por relevância + score original
+    papers = papers.sort((a, b) => relevanceScore(b, allKws) - relevanceScore(a, allKws));
+  }
   // Boost de português — se optPt estiver activo, artigos em PT sobem no ranking
   papers = boostPortuguese(papers);
 
@@ -2891,6 +3109,76 @@ function exportResults(fmt) {
 }
 
 // ── INIT ──
+// ── TICKER DAS ÁREAS: sempre em movimento (JS puro, mais fiável que CSS) ──
+(function initTicker() {
+  const bar = document.getElementById('tabsBar');
+  const inner = document.getElementById('tabsInner');
+  if (!bar || !inner) return;
+
+  let pos = 0;
+  let paused = false;
+  const SPEED = 0.5; // px por frame (~30px/s a 60fps)
+
+  function tick() {
+    if (!paused) {
+      pos += SPEED;
+      // Quando chegou à metade (conteúdo duplicado), volta ao início sem salto
+      if (pos >= inner.scrollWidth / 2) pos = 0;
+      bar.scrollLeft = pos;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  bar.addEventListener('mouseenter', () => { paused = true; });
+  bar.addEventListener('mouseleave', () => { paused = false; });
+  bar.addEventListener('touchstart', () => { paused = true; }, { passive: true });
+  bar.addEventListener('touchend',   () => { setTimeout(() => { paused = false; }, 2000); });
+
+  // Tornar o bar scrollável pelo JS (não pelo utilizador directamente)
+  bar.style.overflow = 'hidden';
+  bar.style.scrollBehavior = 'auto';
+
+  // Delegação de cliques — funciona para os botões duplicados também
+  bar.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    const area = btn.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];
+    if (!area) return;
+    // Marcar activo
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('on');
+      b.setAttribute('aria-selected','false');
+    });
+    document.querySelectorAll(`.tab-btn[onclick*="'${area}'"]`).forEach(b => {
+      b.classList.add('on');
+      b.setAttribute('aria-selected','true');
+    });
+    // Obter label e preencher o campo de descrição
+    const label = btn.textContent.trim();
+    if (area !== 'all') {
+      const desc = document.getElementById('descQuery');
+      if (desc && !desc.value.trim()) {
+        desc.value = label;
+        desc.focus();
+      }
+      ST.activeTab = area;
+      // Se já há resultados, re-filtra; se não, inicia pesquisa
+      if (desc && desc.value.trim()) doSearch();
+    } else {
+      ST.activeTab = 'all';
+      if (ST.results.length) rerenderResults();
+    }
+    paused = false; // retomar o ticker
+  });
+
+  requestAnimationFrame(tick);
+})();
+
+// Enter na textarea de descrição inicia a pesquisa (Shift+Enter = nova linha)
+document.getElementById('descQuery')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSearch(); }
+});
+
 document.getElementById('mainQuery').addEventListener('keydown', e => {
   if (e.key === 'Enter') doSearch();
 });
@@ -2935,6 +3223,86 @@ function boostPortuguese(papers) {
 })();
 
 // Registo do Service Worker (PWA)
+// ── SISTEMA DE FEEDBACK, AVALIAÇÃO E COMENTÁRIOS ──
+let _currentRating = 0;
+const RATING_LABELS = ['','Mau','Razoável','Bom','Muito bom','Excelente'];
+
+function setRating(v) {
+  _currentRating = v;
+  document.querySelectorAll('.star-btn').forEach(btn => {
+    btn.style.color = parseInt(btn.dataset.v) <= v ? '#f59e0b' : 'var(--text3)';
+  });
+  const lbl = document.getElementById('ratingLabel');
+  if (lbl) lbl.textContent = RATING_LABELS[v] || '';
+}
+
+async function submitFeedback() {
+  const alertBox = document.getElementById('fbAlert');
+  const name    = (document.getElementById('fbName')?.value || '').trim() || 'Anónimo';
+  const comment = (document.getElementById('fbComment')?.value || '').trim();
+  if (!_currentRating) {
+    alertBox.innerHTML = '<div class="error-banner"><i class="fa-solid fa-triangle-exclamation"></i> Seleccione uma avaliação de 1 a 5 estrelas antes de enviar.</div>';
+    return;
+  }
+  if (!comment) {
+    alertBox.innerHTML = '<div class="error-banner"><i class="fa-solid fa-triangle-exclamation"></i> Escreva um comentário antes de enviar.</div>';
+    return;
+  }
+  const fb = { id: 'fb_' + Date.now(), name, comment, rating: _currentRating, createdAt: Date.now() };
+  // Guardar localmente
+  const localFbs = JSON.parse(localStorage.getItem('sn_feedbacks') || '[]');
+  localFbs.unshift(fb);
+  localStorage.setItem('sn_feedbacks', JSON.stringify(localFbs.slice(0, 100)));
+  // Enviar para a nuvem
+  await SNCloud.upsert('feedbacks', fb.id, fb);
+  // Notificar o administrador
+  const adminUsers = SNAuth.listUsers().filter(u => u.role === 'admin');
+  adminUsers.forEach(a => SNData.addNotification(a.id, `Nova avaliação: ${RATING_LABELS[_currentRating]} (${'★'.repeat(_currentRating)})`, `${name}: ${comment.slice(0,80)}`));
+  alertBox.innerHTML = '<div style="background:var(--success-dim);border:1px solid rgba(34,197,94,.25);border-radius:9px;padding:12px 14px;color:#6ee79f;font-size:13px"><i class="fa-solid fa-check" style="margin-right:6px"></i>Obrigado pelo seu comentário! Será lido pelo administrador.</div>';
+  document.getElementById('fbComment').value = '';
+  document.getElementById('fbName').value = '';
+  setRating(0);
+  loadFeedbacks();
+}
+
+async function loadFeedbacks() {
+  const el = document.getElementById('fbList');
+  if (!el) return;
+  // Tenta carregar da nuvem; fallback para localStorage
+  let fbs = [];
+  try { fbs = await SNCloud.fetchAll('feedbacks'); } catch (e) {}
+  if (!fbs.length) fbs = JSON.parse(localStorage.getItem('sn_feedbacks') || '[]');
+  fbs.sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
+  if (!fbs.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--text3)">Ainda não há comentários. Seja o primeiro a avaliar!</p>';
+    return;
+  }
+  el.innerHTML = fbs.slice(0, 20).map(fb => `
+    <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${fb.name || 'Anónimo'}</span>
+        <span style="color:#f59e0b;font-size:13px">${'★'.repeat(fb.rating || 0)}${'☆'.repeat(5-(fb.rating||0))}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto">${fb.createdAt ? new Date(fb.createdAt).toLocaleDateString('pt-PT') : ''}</span>
+      </div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6">${fb.comment || ''}</p>
+    </div>`).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => loadFeedbacks());
+
+// ── SINCRONIZAÇÃO AUTO FIREBASE (index.html) ──
+// Sincroniza silenciosamente a cada 30 segundos para que utilizadores
+// recém-registados noutros dispositivos apareçam no painel do admin.
+async function indexAutoSync() {
+  if (!SNCloud.isReady()) return;
+  const user = SNAuth.getCurrentUser();
+  if (!user) return;
+  // Enviar este utilizador para a nuvem (actualiza plano se mudou)
+  await SNCloud.upsert('users', user.id, SNAuth.getCurrentUserRaw());
+}
+indexAutoSync();
+setInterval(indexAutoSync, 30000);
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
